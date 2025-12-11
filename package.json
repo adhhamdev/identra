@@ -3,10 +3,11 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "npx expo start --tunnel",
-    "android": "npx expo start --android",
-    "ios": "npx expo start --ios",
-    "web": "npx expo start --web"
+    "start": "bunx expo start --tunnel",
+    "android": "bunx expo start --android",
+    "ios": "bunx expo start --ios",
+    "web": "bunx expo start --web",
+    "prod": "bunx expo start --no-dev --minify --tunnel"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
