@@ -1,167 +1,289 @@
-import { Layout } from '@/constants/Layout';
-import { Typography } from '@/constants/Typography';
-import { MoreVertical, ShieldCheck } from 'lucide-react-native';
-import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Layout } from "@/constants/Layout";
+import { Typography } from "@/constants/Typography";
+import { useTheme } from "@/context/ThemeContext";
+import {
+  AlertTriangle,
+  Calendar,
+  MoreVertical,
+  ShieldCheck,
+} from "lucide-react-native";
+import React from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface CertificateCardProps {
-    title: string;
-    subtitle: string;
-    status: 'Valid' | 'Expired';
-    expiry: string;
-    icon: any; // Lucide icon component
-    color: string; // Background color for icon circle
-    previewImage?: string; // Optional preview image URL
+  title: string;
+  subtitle: string;
+  status: "Valid" | "Expired";
+  expiry: string;
+  icon: any; // Lucide icon component
+  color: string; // Background color for icon circle
+  previewImage?: string; // Optional preview image URL
 }
 
 export default function CertificateCard({
-    title,
-    subtitle,
-    status,
-    expiry,
-    icon: Icon,
-    color,
-    previewImage,
+  title,
+  subtitle,
+  status,
+  expiry,
+  icon: Icon,
+  color,
+  previewImage,
 }: CertificateCardProps) {
-    return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <View style={[styles.iconCircle, { backgroundColor: color }]}>
-                        <Icon size={20} color="#FFF" />
-                    </View>
-                    <View>
-                        <Text style={styles.title}>{title}</Text>
-                        <Text style={styles.subtitle}>{subtitle}</Text>
-                    </View>
-                </View>
-                <TouchableOpacity>
-                    <MoreVertical size={20} color="#AAA" />
-                </TouchableOpacity>
-            </View>
+  const { colors, isDark } = useTheme();
+  const isValid = status === "Valid";
+  const statusColor = isValid ? colors.success : colors.error;
+  const statusBg = isValid ? colors.badgeSuccess : colors.badgeError;
 
-            {/* Status Row */}
-            <View style={styles.statusRow}>
-                <View style={styles.statusBadge}>
-                    <ShieldCheck size={12} color="#008000" style={{ marginRight: 4 }} />
-                    <Text style={styles.statusText}>{status}</Text>
-                </View>
-                <Text style={styles.expiryText}>Expires {expiry}</Text>
+  return (
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View
+            style={[
+              styles.iconCircle,
+              {
+                backgroundColor: isDark
+                  ? "rgba(255,255,255,0.08)"
+                  : "rgba(0,0,0,0.04)",
+              },
+            ]}
+          >
+            <View style={[styles.iconInner, { backgroundColor: color }]}>
+              <Icon size={20} color="#FFF" />
             </View>
-
-            {/* Preview Area */}
-            <TouchableOpacity style={styles.previewArea}>
-                {previewImage ? (
-                    <Image source={{ uri: previewImage }} style={styles.previewImage} resizeMode="cover" />
-                ) : (
-                    <View style={styles.placeholderPreview}>
-                        <View style={styles.placeholderContent} />
-                    </View>
-                )}
-                <View style={styles.tapOverlay}>
-                    <Text style={styles.tapText}>TAP TO VIEW</Text>
-                </View>
-            </TouchableOpacity>
+          </View>
+          <View>
+            <Text
+              style={[styles.title, { color: colors.text }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {title}
+            </Text>
+            <Text
+              style={[styles.subtitle, { color: colors.textSecondary }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {subtitle}
+            </Text>
+          </View>
         </View>
-    );
+        <TouchableOpacity
+          style={[
+            styles.menuButton,
+            {
+              backgroundColor: isDark
+                ? "rgba(255,255,255,0.06)"
+                : "rgba(0,0,0,0.04)",
+            },
+          ]}
+        >
+          <MoreVertical size={18} color={colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Status Row */}
+      <View style={styles.statusRow}>
+        <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+          {isValid ? (
+            <ShieldCheck
+              size={12}
+              color={statusColor}
+              style={{ marginRight: 6 }}
+            />
+          ) : (
+            <AlertTriangle
+              size={12}
+              color={statusColor}
+              style={{ marginRight: 6 }}
+            />
+          )}
+          <Text style={[styles.statusText, { color: statusColor }]}>
+            {status}
+          </Text>
+        </View>
+        <View style={styles.expiryRight}>
+          <Calendar
+            size={14}
+            color={colors.textSecondary}
+            style={{ marginRight: 6 }}
+          />
+          <Text
+            style={[styles.expiryText, { color: colors.textSecondary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            Expires {expiry}
+          </Text>
+        </View>
+      </View>
+
+      {/* Preview Area */}
+      <TouchableOpacity
+        style={[
+          styles.previewArea,
+          {
+            backgroundColor: isDark
+              ? "rgba(255,255,255,0.06)"
+              : "rgba(0,0,0,0.04)",
+            borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+          },
+        ]}
+        activeOpacity={0.9}
+      >
+        {previewImage ? (
+          <Image
+            source={{ uri: previewImage }}
+            style={styles.previewImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.placeholderPreview}>
+            <View
+              style={[
+                styles.placeholderContent,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(255,255,255,0.08)"
+                    : "rgba(0,0,0,0.06)",
+                },
+              ]}
+            />
+          </View>
+        )}
+        <View
+          style={[
+            styles.tapOverlay,
+            {
+              backgroundColor: isDark ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.25)",
+            },
+          ]}
+        >
+          <Text style={styles.tapText}>VIEW</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        backgroundColor: '#F5E6D3', // Beige/Peach background
-        borderRadius: Layout.borderRadius.xl,
-        padding: Layout.spacing.m,
-        marginBottom: Layout.spacing.m,
-        ...Layout.shadows.soft,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: Layout.spacing.m,
-    },
-    headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    iconCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: Layout.spacing.m,
-    },
-    title: {
-        fontFamily: Typography.fontFamily.bold,
-        fontSize: 16,
-        color: '#333',
-    },
-    subtitle: {
-        fontFamily: Typography.fontFamily.medium,
-        fontSize: 12,
-        color: '#888',
-        marginTop: 2,
-    },
-    statusRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: Layout.spacing.m,
-    },
-    statusBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#E8F5E9',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        marginRight: Layout.spacing.m,
-    },
-    statusText: {
-        fontFamily: Typography.fontFamily.bold,
-        fontSize: 12,
-        color: '#008000',
-    },
-    expiryText: {
-        fontFamily: Typography.fontFamily.medium,
-        fontSize: 12,
-        color: '#008000', // Matching the green theme from image
-    },
-    previewArea: {
-        height: 100,
-        borderRadius: Layout.borderRadius.l,
-        overflow: 'hidden',
-        position: 'relative',
-        backgroundColor: '#D7CCC8', // Darker beige placeholder
-    },
-    previewImage: {
-        width: '100%',
-        height: '100%',
-    },
-    placeholderPreview: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    placeholderContent: {
-        width: '60%',
-        height: '60%',
-        backgroundColor: 'rgba(255,255,255,0.3)',
-        borderRadius: 8,
-    },
-    tapOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: Layout.spacing.s,
-        backgroundColor: 'rgba(0,0,0,0.1)', // Subtle gradient overlay effect
-    },
-    tapText: {
-        fontFamily: Typography.fontFamily.bold,
-        fontSize: 10,
-        color: '#FFF',
-        letterSpacing: 1,
-    },
+  container: {
+    borderWidth: 1,
+    borderRadius: Layout.borderRadius.xl,
+    padding: Layout.spacing.m,
+    marginBottom: Layout.spacing.m,
+    ...Layout.shadows.soft,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Layout.spacing.m,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    paddingRight: Layout.spacing.s,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: Layout.spacing.m,
+  },
+  iconInner: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 16,
+  },
+  subtitle: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Layout.spacing.m,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  statusText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 12,
+  },
+  expiryRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 1,
+    marginLeft: Layout.spacing.m,
+  },
+  expiryText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 12,
+  },
+  previewArea: {
+    height: 112,
+    borderRadius: Layout.borderRadius.l,
+    overflow: "hidden",
+    position: "relative",
+    borderWidth: 1,
+  },
+  previewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  placeholderPreview: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderContent: {
+    width: "60%",
+    height: "60%",
+    borderRadius: 8,
+  },
+  tapOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Layout.spacing.m,
+    paddingVertical: Layout.spacing.s,
+  },
+  tapText: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 10,
+    color: "#FFF",
+    letterSpacing: 1,
+  },
 });
