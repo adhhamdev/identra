@@ -40,36 +40,6 @@
     },
     "extra": {
       "router": {},
-      "firebase": {
-        "default": {
-          "apiKey": "AIzaSyBrfOzhdZFpzRYdpyag25Ru_W_q93Gp7Nc",
-          "authDomain": "identra-fb.firebaseapp.com",
-          "projectId": "identra-fb",
-          "storageBucket": "identra-fb.firebasestorage.app",
-          "messagingSenderId": "883451725534"
-        },
-        "android": {
-          "apiKey": "AIzaSyBrfOzhdZFpzRYdpyag25Ru_W_q93Gp7Nc",
-          "authDomain": "identra-fb.firebaseapp.com",
-          "projectId": "identra-fb",
-          "appId": "1:883451725534:android:313efa9a870d90ec35644f",
-          "storageBucket": "identra-fb.firebasestorage.app",
-          "messagingSenderId": "883451725534"
-        },
-        "ios": {
-          "apiKey": "AIzaSyAAyxSmKneoBnRu6CsX_F_Gj8ygyKv6xhM",
-          "authDomain": "identra-fb.firebaseapp.com",
-          "projectId": "identra-fb",
-          "appId": "1:883451725534:ios:faf80042ef1193cd35644f",
-          "storageBucket": "identra-fb.firebasestorage.app",
-          "messagingSenderId": "883451725534"
-        }
-      },
-      "google": {
-        "webClientId": "883451725534-7otalels1iljo4h6hg0lb8pchnt0oust.apps.googleusercontent.com",
-        "iosClientId": "883451725534-co8e9th0qhe1eoja5skj05fchbkhnsg3.apps.googleusercontent.com",
-        "androidClientId": "883451725534-1ba6ck4e66apdl2ds8rcv6hruk64a9u4.apps.googleusercontent.com"
-      },
       "eas": {
         "projectId": "9b9e5cbb-d099-4ba1-8746-e3a14ff1995a"
       }

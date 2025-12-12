@@ -39,9 +39,14 @@ export default function SignInScreen() {
   const googleConfig = useMemo(() => {
     const extra = Constants.expoConfig?.extra as Extra | undefined;
     return {
-      webClientId: extra?.google?.webClientId,
-      iosClientId: extra?.google?.iosClientId,
-      androidClientId: extra?.google?.androidClientId,
+      webClientId:
+        extra?.google?.webClientId ?? process.env.GOOGLE_WEB_CLIENT_ID ?? "",
+      iosClientId:
+        extra?.google?.iosClientId ?? process.env.GOOGLE_IOS_CLIENT_ID ?? "",
+      androidClientId:
+        extra?.google?.androidClientId ??
+        process.env.GOOGLE_ANDROID_CLIENT_ID ??
+        "",
     };
   }, []);
 
