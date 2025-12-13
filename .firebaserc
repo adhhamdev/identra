@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "identra-fb"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

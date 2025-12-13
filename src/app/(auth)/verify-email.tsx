@@ -18,14 +18,14 @@ export default function VerifyEmailScreen() {
   useEffect(() => {
     if (initializing) return;
     if (!user) {
-      router.replace("/(auth)/sign-in");
+      router.replace("/(auth)/sign-in" as any);
       return;
     }
-    const isPasswordUser = user.providerData.some(
-      (p) => p.providerId === "password"
-    );
-    if (!isPasswordUser || user.emailVerified) {
-      router.replace("/(tabs)");
+
+    // Check if user has already added NIC (you can check a flag in user profile)
+    // For now, we'll redirect verified users to add-nic screen
+    if (user.emailVerified) {
+      router.replace("/(auth)/add-nic" as any);
     }
   }, [user, initializing, router]);
 
@@ -48,7 +48,7 @@ export default function VerifyEmailScreen() {
     try {
       await refreshUser();
       if (user?.emailVerified) {
-        router.replace("/(tabs)");
+        router.replace("/(auth)/add-nic");
       } else {
         setStatus("Not verified yet. Please check your inbox and try again.");
       }

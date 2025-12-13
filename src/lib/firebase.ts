@@ -2,53 +2,66 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
 import { Auth, getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
+import { Functions, getFunctions } from 'firebase/functions';
 import { Platform } from 'react-native';
 
-type FirebaseExtraConfig = {
+type FirebaseConfigGroup = {
   apiKey: string;
   authDomain: string;
   projectId: string;
-  appId: string;
+  appId?: string;
   storageBucket?: string;
   messagingSenderId?: string;
-  measurementId?: string;
 };
 
-const extraConfig = Constants.expoConfig?.extra;
+const extra = Constants.expoConfig?.extra;
 
-const firebaseConfig: FirebaseExtraConfig = {
-  apiKey: extraConfig?.firebase?.apiKey ?? process.env.FIREBASE_API_KEY ?? '',
-  authDomain: extraConfig?.firebase?.authDomain ?? process.env.FIREBASE_AUTH_DOMAIN ?? '',
-  projectId: extraConfig?.firebase?.projectId ?? process.env.FIREBASE_PROJECT_ID ?? '',
-  appId:
-    Platform.OS === 'ios'
-      ? (extraConfig?.firebase?.ios?.appId ?? process.env.FIREBASE_IOS_APP_ID ?? '')
-      : (extraConfig?.firebase?.android?.appId ?? process.env.FIREBASE_ANDROID_APP_ID ?? ''),
-  storageBucket: extraConfig?.firebase?.storageBucket ?? process.env.FIREBASE_STORAGE_BUCKET ?? '',
-  messagingSenderId: extraConfig?.firebase?.messagingSenderId ?? process.env.FIREBASE_MESSAGING_SENDER_ID ?? '',
+// Select platform-specific config exactly how you want it
+const platformConfig: FirebaseConfigGroup =
+  Platform.OS === 'ios'
+    ? extra?.firebaseIos
+    : Platform.OS === 'android'
+    ? extra?.firebaseAndroid
+    : extra?.firebaseDefault;
+
+// Merge fallback config (web uses default)
+const firebaseConfig = {
+  apiKey: platformConfig.apiKey,
+  authDomain: platformConfig.authDomain,
+  projectId: platformConfig.projectId,
+  appId: platformConfig.appId,
+  storageBucket: platformConfig.storageBucket,
+  messagingSenderId: platformConfig.messagingSenderId,
 };
 
+// Validate to avoid silent failures
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  throw new Error('Firebase config is missing. Ensure .env is set or app.json extra is provided.');
+  throw new Error(
+    '❌ Firebase config is missing. Ensure environment variables are set correctly in app.config.js / EAS secrets.'
+  );
 }
 
-function initializeFirebaseApp(): FirebaseApp {
-  if (getApps().length > 0) {
-    return getApp();
-  }
+function initFirebaseApp(): FirebaseApp {
+  if (getApps().length > 0) return getApp();
   return initializeApp(firebaseConfig);
 }
 
-function initializeFirebaseAuth(app: FirebaseApp): Auth {
+function initFirebaseAuth(app: FirebaseApp): Auth {
   if (Platform.OS === 'web') {
-    const existing = getApps().length > 0 ? getAuth(app) : undefined;
-    if (existing) return existing;
+    // Web supports RN persistence for Expo Router
     return initializeAuth(app, {
       persistence: getReactNativePersistence(AsyncStorage),
     });
   }
-    return getAuth(app);
+
+  return getAuth(app);
 }
 
-export const app = initializeFirebaseApp();
-export const auth = initializeFirebaseAuth(app);
+function initFirebaseFunctions(app: FirebaseApp): Functions {
+  // Use asia-south1 because you picked it for Sri Lanka latency
+  return getFunctions(app, 'asia-south1');
+}
+
+export const app = initFirebaseApp();
+export const auth = initFirebaseAuth(app);
+export const functions = initFirebaseFunctions(app);

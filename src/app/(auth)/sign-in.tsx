@@ -36,20 +36,18 @@ export default function SignInScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ⬇️ Pull google client IDs ONLY from app.config.js (Expo recommended approach)
   const googleConfig = useMemo(() => {
-    const extra = Constants.expoConfig?.extra as Extra | undefined;
+    const extra = Constants.expoConfig?.extra;
+
     return {
-      webClientId:
-        extra?.google?.webClientId ?? process.env.GOOGLE_WEB_CLIENT_ID ?? "",
-      iosClientId:
-        extra?.google?.iosClientId ?? process.env.GOOGLE_IOS_CLIENT_ID ?? "",
-      androidClientId:
-        extra?.google?.androidClientId ??
-        process.env.GOOGLE_ANDROID_CLIENT_ID ??
-        "",
+      webClientId: extra?.google?.webClientId ?? "",
+      iosClientId: extra?.google?.iosClientId ?? "",
+      androidClientId: extra?.google?.androidClientId ?? "",
     };
   }, []);
 
+  // ⬇️ Create auth request
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: googleConfig.webClientId,
     iosClientId: googleConfig.iosClientId,
@@ -57,30 +55,34 @@ export default function SignInScreen() {
     selectAccount: true,
   });
 
+  // ⬇️ Handle Google response → Firebase credential sign-in
   useEffect(() => {
     if (response?.type === "success") {
       const { idToken, accessToken } = response.authentication ?? {};
       if (idToken || accessToken) {
-        signInWithGoogleTokens({
-          idToken: idToken ?? undefined,
-          accessToken: accessToken ?? undefined,
-        }).catch((err) => setError(err?.message ?? "Google sign-in failed"));
+        signInWithGoogleTokens({ idToken, accessToken }).catch((err) =>
+          setError(err?.message ?? "Google sign-in failed")
+        );
       }
     }
-  }, [response, signInWithGoogleTokens]);
+  }, [response]);
 
+  // ⬇️ Post-login redirects
   useEffect(() => {
     if (initializing) return;
+
     if (!user) return;
-    const isPasswordUser = user.providerData.some(
-      (p) => p.providerId === "password"
+
+    const isOAuthUser = user.providerData.some(
+      (p) => p.providerId !== "password"
     );
-    if (isPasswordUser && !user.emailVerified) {
-      router.replace("/(auth)/verify-email");
+
+    if (user.emailVerified || isOAuthUser) {
+      router.replace("/(auth)/add-nic" as any);
     } else {
-      router.replace("/(tabs)");
+      router.replace("/(auth)/verify-email" as any);
     }
-  }, [user, initializing, router]);
+  }, [user, initializing]);
 
   const onSubmit = async () => {
     setError(null);
@@ -95,9 +97,10 @@ export default function SignInScreen() {
     }
   };
 
+  // ⬇️ Google button should only show if platform supports its client ID
   const canUseGoogle =
-    !!googleConfig.androidClientId ||
-    !!googleConfig.iosClientId ||
+    (Platform.OS === "android" && googleConfig.androidClientId) ||
+    (Platform.OS === "ios" && googleConfig.iosClientId) ||
     (Platform.OS === "web" && googleConfig.webClientId);
 
   const handleGoogle = async () => {

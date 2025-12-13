@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only access their own documents
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // NIC hashes collection - write-only for deduplication
+    match /nic_hashes/{nicHash} {
+      allow create: if request.auth != null;
+      allow read, write: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    
+    // Private user data
+    match /users_private/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
