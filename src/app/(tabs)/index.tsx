@@ -1,6 +1,6 @@
 import { Bell, ShieldCheck } from 'lucide-react-native';
 import React, { useCallback } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AddDocumentSheet from '@/components/AddDocumentSheet';
@@ -11,27 +11,80 @@ import { Layout } from '@/constants/Layout';
 import { Typography } from '@/constants/Typography';
 import { useBottomSheet } from '@/context/BottomSheetContext';
 import { useTheme } from '@/context/ThemeContext';
+import { DocumentType, useDocumentManagement } from '@/hooks/useDocumentManagement';
 
 export default function HomeScreen() {
   const { colors, isDark } = useTheme();
   const { present, dismiss } = useBottomSheet();
 
+  const { uploadFile, takePhoto, pickImage, pickDocument } = useDocumentManagement();
+
+  const mapDocType = (id: string): DocumentType => {
+    switch (id) {
+      case "nic":
+        return "NIC";
+      case "passport":
+        return "Passport";
+      case "bank_card":
+        return "Bank Card";
+      case "birth_cert":
+        return "Certificate";
+      default:
+        return "Other";
+    }
+  };
+
+  const handleUpload = async (method: string, type: DocumentType = "Other") => {
+    let result = null;
+    if (method === "camera") {
+      result = await takePhoto();
+    } else if (method === "photo") {
+      result = await pickImage();
+    } else if (method === "pdf") {
+      result = await pickDocument();
+    }
+
+    if (result) {
+      await uploadFile(result.uri, {
+        title: `${type} - ${new Date().toLocaleDateString()}`,
+        type: type,
+      });
+    }
+  };
+
   const handleAddPress = useCallback(() => {
-    present('add-document', {
+    present("add-document", {
       component: AddDocumentSheet,
-      snapPoints: ['74%'],
+      snapPoints: ["74%"],
       props: {
-        onDocumentTypeSelect: (type: string) => {
-          console.log('Selected document type:', type);
+        onDocumentTypeSelect: (typeId: string) => {
           dismiss();
+          const type = mapDocType(typeId);
+          // After selecting type, ask for method
+          Alert.alert(
+            "Upload Method",
+            `How do you want to upload your ${type}?`,
+            [
+              {
+                text: "Camera",
+                onPress: () => handleUpload("camera", type),
+              },
+              {
+                text: "Gallery",
+                onPress: () => handleUpload("photo", type),
+              },
+              { text: "Cancel", style: "cancel" },
+            ]
+          );
         },
         onUploadMethodSelect: (method: string) => {
-          console.log('Selected upload method:', method);
           dismiss();
+          // If method selected directly, type is "Other"
+          handleUpload(method, "Other");
         },
       },
     });
-  }, [present, dismiss]);
+  }, [present, dismiss, uploadFile]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>

@@ -1,8 +1,8 @@
-const crypto = require("crypto");
-const admin = require("firebase-admin");
-const { onCall } = require("firebase-functions/v2/https");
-const { defineSecret } = require("firebase-functions/params");
-const { HttpsError } = require("firebase-functions/v2/https");
+const crypto = require('crypto');
+const admin = require('firebase-admin');
+const { onCall } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
+const { HttpsError } = require('firebase-functions/v2/https');
 
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
@@ -12,7 +12,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 // Define secret for NIC secret pepper
-const nicSecretPepper = defineSecret("NIC_SECRET_PEPPER");
+const nicSecretPepper = defineSecret('NIC_SECRET_PEPPER');
 
 /**
  * Cloud Function: validateAndRegisterNIC
@@ -44,8 +44,8 @@ const nicSecretPepper = defineSecret("NIC_SECRET_PEPPER");
  */
 exports.validateAndRegisterNIC = onCall(
   {
-    region: "asia-south1",
-    memory: "256MiB",
+    region: 'asia-south1',
+    memory: '256MiB',
     maxInstances: 10,
     secrets: [nicSecretPepper],
   },
@@ -53,8 +53,16 @@ exports.validateAndRegisterNIC = onCall(
     // Ensure user is authenticated
     if (!request.auth) {
       throw new HttpsError(
-        "unauthenticated",
-        "User must be authenticated to register NIC"
+        'unauthenticated',
+        'User must be authenticated to register NIC'
+      );
+    }
+
+    // Verify email is verified
+    if (!request.auth.token.email_verified) {
+      throw new HttpsError(
+        'permission-denied',
+        'Your email must be verified to register your NIC.'
       );
     }
 
@@ -62,10 +70,10 @@ exports.validateAndRegisterNIC = onCall(
     const { nic } = request.data;
 
     // Validate input
-    if (!nic || typeof nic !== "string") {
+    if (!nic || typeof nic !== 'string') {
       throw new HttpsError(
-        "invalid-argument",
-        "NIC is required and must be a string"
+        'invalid-argument',
+        'NIC is required and must be a string'
       );
     }
 
@@ -77,8 +85,8 @@ exports.validateAndRegisterNIC = onCall(
       /^(([5,6,7,8,9]{1})([0-9]{1})([0,1,2,3,5,6,7,8]{1})([0-9]{6})([v|V|x|X]))|(([1,2]{1})([0-9]{1})([0-9]{2})([0,1,2,3,5,6,7,8]{1})([0-9]{7]))$/;
     if (!nicRegex.test(cleanNIC)) {
       throw new HttpsError(
-        "invalid-argument",
-        "Invalid NIC format. Please enter a valid Sri Lankan NIC number."
+        'invalid-argument',
+        'Invalid NIC format. Please enter a valid Sri Lankan NIC number.'
       );
     }
 
@@ -88,8 +96,8 @@ exports.validateAndRegisterNIC = onCall(
       nicInfo = parseNIC(cleanNIC);
     } catch (error) {
       throw new HttpsError(
-        "internal",
-        "Failed to parse NIC. Please try again."
+        'internal',
+        'Failed to parse NIC. Please try again.'
       );
     }
 
@@ -98,34 +106,34 @@ exports.validateAndRegisterNIC = onCall(
 
     // Check for duplicate NIC
     const existingNICHash = await db
-      .collection("nic_hashes")
+      .collection('nic_hashes')
       .doc(nicHash)
       .get();
     if (existingNICHash.exists) {
       const existingUID = existingNICHash.data()?.uid;
       if (existingUID !== uid) {
         throw new HttpsError(
-          "already-exists",
-          "This NIC number is already registered in our system."
+          'already-exists',
+          'This NIC number is already registered in our system.'
         );
       }
       // If same user, just return existing info
       return {
         success: true,
         data: nicInfo,
-        message: "NIC already registered",
+        message: 'NIC already registered',
       };
     }
 
     // Save NIC hash for deduplication
-    await db.collection("nic_hashes").doc(nicHash).set({
+    await db.collection('nic_hashes').doc(nicHash).set({
       uid: uid,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     // Save user profile data
     await db
-      .collection("users")
+      .collection('users')
       .doc(uid)
       .set(
         {
@@ -142,10 +150,10 @@ exports.validateAndRegisterNIC = onCall(
       );
 
     // Save private user data
-    await db.collection("users_private").doc(uid).set(
+    await db.collection('users_private').doc(uid).set(
       {
         nic_hash: nicHash,
-        nic_full_encrypted: cleanNIC, // TODO: Implement client-side encryption
+        // nic_full_encrypted: REMOVED per security policy (Never store plaintext)
         created_at: admin.firestore.FieldValue.serverTimestamp(),
         last_login: admin.firestore.FieldValue.serverTimestamp(),
       },
@@ -155,7 +163,7 @@ exports.validateAndRegisterNIC = onCall(
     return {
       success: true,
       data: nicInfo,
-      message: "NIC registered successfully",
+      message: 'NIC registered successfully',
     };
   }
 );
@@ -165,7 +173,7 @@ exports.validateAndRegisterNIC = onCall(
  */
 function parseNIC(nic) {
   const isNewFormat = nic.length === 12;
-  const nicType = isNewFormat ? "new" : "old";
+  const nicType = isNewFormat ? 'new' : 'old';
 
   let birthYear;
   let dayOfYear;
@@ -182,8 +190,8 @@ function parseNIC(nic) {
   }
 
   // Determine gender
-  const gender = dayOfYear > 500 ? "female" : "male";
-  const adjustedDayOfYear = gender === "female" ? dayOfYear - 500 : dayOfYear;
+  const gender = dayOfYear > 500 ? 'female' : 'male';
+  const adjustedDayOfYear = gender === 'female' ? dayOfYear - 500 : dayOfYear;
 
   // Convert day of year to full date
   const dob = dayOfYearToDate(birthYear, adjustedDayOfYear);
@@ -205,8 +213,8 @@ function dayOfYearToDate(year, dayOfYear) {
   date.setDate(date.getDate() + dayOfYear - 1);
 
   const yearStr = date.getFullYear().toString();
-  const monthStr = (date.getMonth() + 1).toString().padStart(2, "0");
-  const dayStr = date.getDate().toString().padStart(2, "0");
+  const monthStr = (date.getMonth() + 1).toString().padStart(2, '0');
+  const dayStr = date.getDate().toString().padStart(2, '0');
 
   return `${yearStr}-${monthStr}-${dayStr}`;
 }
@@ -216,8 +224,8 @@ function dayOfYearToDate(year, dayOfYear) {
  */
 function computeNICHash(nic) {
   const secretPepper =
-    nicSecretPepper.value() || "default-pepper-change-in-production";
-  return crypto.createHmac("sha256", secretPepper).update(nic).digest("hex");
+    nicSecretPepper.value() || 'default-pepper-change-in-production';
+  return crypto.createHmac('sha256', secretPepper).update(nic).digest('hex');
 }
 
 /**

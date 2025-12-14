@@ -8,6 +8,7 @@ export default function AuthLayout() {
       <Stack.Screen name="sign-up" options={{ headerShown: false }} />
       <Stack.Screen name="verify-email" options={{ headerShown: false }} />
       <Stack.Screen name="add-nic" options={{ headerShown: false }} />
+      <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
     </Stack>
   );
 }

@@ -1,45 +1,61 @@
 module.exports = () => ({
-  name: "identra",
-  slug: "identra",
-  version: "1.0.0",
-  platforms: ["ios", "android"],
-  orientation: "portrait",
-  icon: "./src/assets/images/icon.png",
-  scheme: "identra",
-  userInterfaceStyle: "automatic",
+  name: 'identra',
+  slug: 'identra',
+  version: '1.0.0',
+  platforms: ['ios', 'android'],
+  orientation: 'portrait',
+  icon: './src/assets/images/icon.png',
+  scheme: 'identra',
+  userInterfaceStyle: 'automatic',
   newArchEnabled: true,
   splash: {
-    image: "./src/assets/images/splash-icon.png",
-    resizeMode: "contain",
-    backgroundColor: "#ffffff",
+    image: './src/assets/images/splash-icon.png',
+    resizeMode: 'contain',
+    backgroundColor: '#ffffff',
   },
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.adhham.identra",
+    bundleIdentifier: 'com.adhham.identra',
+    usesApplePay: true,
   },
   android: {
-    package: "com.adhham.identra",
+    package: 'com.adhham.identra',
     adaptiveIcon: {
-      foregroundImage: "./src/assets/images/adaptive-icon.png",
-      backgroundColor: "#ffffff",
+      foregroundImage: './src/assets/images/adaptive-icon.png',
+      backgroundColor: '#ffffff',
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
   },
   web: {
-    bundler: "metro",
-    output: "static",
-    favicon: "./src/assets/images/favicon.ico",
+    bundler: 'metro',
+    output: 'static',
+    favicon: './src/assets/images/favicon.ico',
   },
-  plugins: ["expo-router", "expo-font"],
+  plugins: [
+    'expo-router',
+    'expo-font',
+    [
+      'expo-camera',
+      {
+        cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera.',
+      },
+    ],
+    [
+      'expo-local-authentication',
+      {
+        faceIDPermission: 'Allow $(PRODUCT_NAME) to use Face ID.',
+      },
+    ],
+  ],
   experiments: {
     typedRoutes: true,
   },
-  owner: "adhham",
+  owner: 'adhham',
   extra: {
     router: {},
     eas: {
-      projectId: "9b9e5cbb-d099-4ba1-8746-e3a14ff1995a",
+      projectId: '9b9e5cbb-d099-4ba1-8746-e3a14ff1995a',
     },
 
     // Firebase Web (default)

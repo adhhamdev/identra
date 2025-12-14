@@ -1,13 +1,15 @@
 import { Layout } from "@/constants/Layout";
 import { Typography } from "@/constants/Typography";
 import { useTheme } from "@/context/ThemeContext";
+import { useBiometrics } from "@/hooks/useBiometrics"; // Import useBiometrics
+import { File, Paths } from "expo-file-system";
 import {
   AlertTriangle,
   Calendar,
   MoreVertical,
   ShieldCheck,
 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface CertificateCardProps {
@@ -18,6 +20,8 @@ interface CertificateCardProps {
   icon: any; // Lucide icon component
   color: string; // Background color for icon circle
   previewImage?: string; // Optional preview image URL
+  onShare?: () => void;
+  onEdit?: () => void;
 }
 
 export default function CertificateCard({
@@ -28,14 +32,86 @@ export default function CertificateCard({
   icon: Icon,
   color,
   previewImage,
+  onShare,
+  onEdit
 }: CertificateCardProps) {
   const { colors, isDark } = useTheme();
+  const lastTap = useRef<number | null>(null);
+  // Biometrics hooks
+  const { authenticate } = useBiometrics();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const isValid = status === "Valid";
   const statusColor = isValid ? colors.success : colors.error;
   const statusBg = isValid ? colors.badgeSuccess : colors.badgeError;
+  const [imageUri, setImageUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    const cacheImage = async () => {
+      if (!previewImage) {
+        setImageUri(null);
+        return;
+      }
+
+      try {
+        const filename =
+          previewImage.split("%2F").pop()?.split("?")[0] || "doc_image.jpg";
+
+        const file = new File(Paths.cache, filename);
+
+        if (file.exists) {
+          setImageUri(file.uri);
+        } else {
+          try {
+            const response = await fetch(previewImage);
+            if (response.ok) {
+              const buffer = await response.arrayBuffer();
+              file.write(new Uint8Array(buffer));
+              setImageUri(file.uri);
+            } else {
+              setImageUri(previewImage);
+            }
+          } catch (writeError) {
+            console.error("Download failed, using remote URL", writeError);
+            setImageUri(previewImage);
+          }
+        }
+      } catch (e) {
+        console.error("Cache check failed, using remote URL", e);
+        setImageUri(previewImage);
+      }
+    };
+
+    cacheImage();
+  }, [previewImage]);
+
+  const handlePress = async () => {
+    const now = Date.now();
+    const DOUBLE_PRESS_DELAY = 300;
+
+    const lastTime = lastTap.current;
+    if (lastTime && now - lastTime < DOUBLE_PRESS_DELAY) {
+      onEdit?.();
+      return;
+    }
+
+    lastTap.current = now;
+
+    if (isAuthenticated) {
+      // Already unlocked
+      return;
+    }
+    const success = await authenticate("Authenticate to view document");
+    if (success) {
+      setIsAuthenticated(true);
+    }
+  };
 
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onLongPress={onShare}
+      onPress={handlePress}
       style={[
         styles.container,
         { backgroundColor: colors.card, borderColor: colors.border },
@@ -137,25 +213,35 @@ export default function CertificateCard({
           },
         ]}
         activeOpacity={0.9}
+        onPress={handlePress}
       >
-        {previewImage ? (
+        {isAuthenticated && imageUri ? (
           <Image
-            source={{ uri: previewImage }}
+            source={{ uri: imageUri }}
             style={styles.previewImage}
             resizeMode="cover"
           />
         ) : (
           <View style={styles.placeholderPreview}>
-            <View
-              style={[
-                styles.placeholderContent,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(0,0,0,0.06)",
-                },
-              ]}
-            />
+            {!isAuthenticated ? (
+              <View style={{ alignItems: 'center' }}>
+                <View style={[styles.iconCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', marginBottom: 8 }]}>
+                  <ShieldCheck size={24} color={colors.tint} />
+                </View>
+                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Tap to Unlock</Text>
+              </View>
+            ) : (
+              <View
+                style={[
+                  styles.placeholderContent,
+                  {
+                    backgroundColor: isDark
+                      ? "rgba(255,255,255,0.08)"
+                      : "rgba(0,0,0,0.06)",
+                  },
+                ]}
+              />
+            )}
           </View>
         )}
         <View
@@ -166,10 +252,10 @@ export default function CertificateCard({
             },
           ]}
         >
-          <Text style={styles.tapText}>VIEW</Text>
+          <Text style={styles.tapText}>{isAuthenticated ? "VIEW" : "LOCKED"}</Text>
         </View>
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 }
 

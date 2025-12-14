@@ -1,0 +1,64 @@
+[debug] [2025-12-13T18:58:50.576Z] [Firebase Plugin] Activating Firebase extension.
+[info] [Firebase Plugin] Checked firebase-tools, is up to date!
+[debug] [2025-12-13T19:00:27.659Z] [Firebase Plugin] requireAuthWrapper
+[debug] [2025-12-13T19:00:27.664Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-13T19:00:27.666Z] > authorizing via signed-in user (msmadhhamg@gmail.com)
+[debug] [2025-12-13T19:00:27.671Z] Checked if tokens are valid: false, expires at: 1765633880383
+[debug] [2025-12-13T19:00:27.671Z] Checked if tokens are valid: false, expires at: 1765633880383
+[debug] [2025-12-13T19:00:27.672Z] > refreshing access token with scopes: []
+[debug] [2025-12-13T19:00:27.678Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-12-13T19:00:27.678Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-13T19:00:27.696Z] [Firebase Plugin] VSCode notification server listening on port 40001
+[debug] [2025-12-13T19:00:44.372Z] Field "/functions" in "firebase.json" is possibly invalid: must be object
+[debug] [2025-12-13T19:00:44.373Z] Field "/functions" in "firebase.json" is possibly invalid: must be object
+[debug] [2025-12-13T19:00:44.373Z] Field "/functions/0/runtime" in "firebase.json" is possibly invalid: must be equal to one of the allowed values
+[debug] [2025-12-13T19:00:44.374Z] Object "/functions/0" in "firebase.json" is missing required property: {"missingProperty":"remoteSource"}
+[debug] [2025-12-13T19:00:44.374Z] Field "/functions/0" in "firebase.json" is possibly invalid: must match a schema in anyOf
+[debug] [2025-12-13T19:00:44.374Z] Field "/functions" in "firebase.json" is possibly invalid: must match a schema in anyOf
+[info] [Firebase Plugin] Starting Data Connect toolkit (version 2.17.0) on port 50001
+[info] i  dataconnect: downloading dataconnect-emulator-2.17.0.exe... {"metadata":{"emulator":{"name":"dataconnect"},"message":"downloading dataconnect-emulator-2.17.0.exe..."}}
+[debug] [2025-12-13T19:00:44.584Z] >>> [apiv2][query] GET https://storage.googleapis.com/firemat-preview-drop/emulator/dataconnect-emulator-windows-amd64-v2.17.0 
+[debug] [2025-12-13T19:00:45.373Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-12-13T19:00:45.374Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-12-13T19:00:46.590Z] [Firebase Plugin] User found:  msmadhhamg@gmail.com
+[info] [Firebase Plugin] (Core:Project) New user detected, fetching projects
+[debug] [2025-12-13T19:00:46.597Z] Checked if tokens are valid: true, expires at: 1765656044374
+[debug] [2025-12-13T19:00:46.599Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=1000
+[debug] [2025-12-13T19:00:46.831Z] <<< [apiv2][status] GET https://storage.googleapis.com/firemat-preview-drop/emulator/dataconnect-emulator-windows-amd64-v2.17.0 200
+[debug] [2025-12-13T19:00:46.831Z] <<< [apiv2][body] GET https://storage.googleapis.com/firemat-preview-drop/emulator/dataconnect-emulator-windows-amd64-v2.17.0 [stream]
+[debug] [2025-12-13T19:00:48.420Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2025-12-13T19:00:48.420Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[info] i  dataconnect: Removing outdated emulator files: dataconnect-emulator-3.0.0.exe {"metadata":{"emulator":{"name":"dataconnect"},"message":"Removing outdated emulator files: dataconnect-emulator-3.0.0.exe"}}
+[debug] [2025-12-13T19:01:35.495Z] 'fdc build' failed with error: Unable to build your Data Connect schema and connectors (exit code 1): E1214 00:31:35.475801   20880 cmd.go:43] Error loading data connect config: could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"'fdc build' failed with error: Unable to build your Data Connect schema and connectors (exit code 1): E1214 00:31:35.475801   20880 cmd.go:43] Error loading data connect config: could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:01:35.497Z] Ignoring unsupported arg: auto_download {"metadata":{"emulator":{"name":"dataconnect"},"message":"Ignoring unsupported arg: auto_download"}}
+[debug] [2025-12-13T19:01:35.498Z] Ignoring unsupported arg: port {"metadata":{"emulator":{"name":"dataconnect"},"message":"Ignoring unsupported arg: port"}}
+[debug] [2025-12-13T19:01:35.498Z] Starting Data Connect Emulator with command {"binary":"C:\\Users\\acer\\.cache\\firebase\\emulators\\dataconnect-emulator-2.17.0.exe","args":["--logtostderr","-v=2","dev","--listen=localhost:50001","--config_dir=e:\\identra\\dataconnect","--enable_output_schema_extensions=true","--enable_output_generated_sdk=true"],"optionalArgs":["listen","config_dir","enable_output_schema_extensions","enable_output_generated_sdk"],"joinArgs":true,"shell":false,"port":9399} {"metadata":{"emulator":{"name":"dataconnect"},"message":"Starting Data Connect Emulator with command {\"binary\":\"C:\\\\Users\\\\acer\\\\.cache\\\\firebase\\\\emulators\\\\dataconnect-emulator-2.17.0.exe\",\"args\":[\"--logtostderr\",\"-v=2\",\"dev\",\"--listen=localhost:50001\",\"--config_dir=e:\\\\identra\\\\dataconnect\",\"--enable_output_schema_extensions=true\",\"--enable_output_generated_sdk=true\"],\"optionalArgs\":[\"listen\",\"config_dir\",\"enable_output_schema_extensions\",\"enable_output_generated_sdk\"],\"joinArgs\":true,\"shell\":false,\"port\":9399}"}}
+[info] i  dataconnect: Data Connect Emulator logging to dataconnect-debug.log {"metadata":{"emulator":{"name":"dataconnect"},"message":"Data Connect Emulator logging to \u001b[1mdataconnect-debug.log\u001b[22m"}}
+[debug] [2025-12-13T19:01:35.562Z] E1214 00:31:35.561533   10128 dev.go:82] Failed to load initial config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:31:35.561533   10128 dev.go:82] Failed to load initial config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:01:35.565Z] E1214 00:31:35.564627   10128 watch.go:102] watchAllDir unable to walk dir `e:\identra\dataconnect`: CreateFile e:\identra\dataconnect: The system cannot find the file specified.
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:31:35.564627   10128 watch.go:102] watchAllDir unable to walk dir `e:\\identra\\dataconnect`: CreateFile e:\\identra\\dataconnect: The system cannot find the file specified.\n"}}
+[debug] [2025-12-13T19:01:35.600Z] I1214 00:31:35.600902   10128 dev.go:105] Listening on address (HTTP + gRPC): 127.0.0.1:50001
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"I1214 00:31:35.600902   10128 dev.go:105] Listening on address (HTTP + gRPC): 127.0.0.1:50001\n"}}
+[error] [Firebase Plugin] error:  {}
+[debug] [2025-12-13T19:01:45.566Z] E1214 00:31:45.566663   10128 watch.go:31] Failed to load config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:31:45.566663   10128 watch.go:31] Failed to load config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:01:55.566Z] E1214 00:31:55.566672   10128 watch.go:31] Failed to load config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:31:55.566672   10128 watch.go:31] Failed to load config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:02:15.489Z] E1214 00:32:05.566397   10128 watch.go:31] Failed to load config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:32:05.566397   10128 watch.go:31] Failed to load config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:02:15.566Z] E1214 00:32:15.566755   10128 watch.go:31] Failed to load config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:32:15.566755   10128 watch.go:31] Failed to load config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:02:25.586Z] E1214 00:32:25.586880   10128 watch.go:31] Failed to load config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:32:25.586880   10128 watch.go:31] Failed to load config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:02:35.568Z] E1214 00:32:35.567963   10128 watch.go:31] Failed to load config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:32:35.567963   10128 watch.go:31] Failed to load config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:02:45.567Z] E1214 00:32:45.567294   10128 watch.go:31] Failed to load config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:32:45.567294   10128 watch.go:31] Failed to load config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:02:55.566Z] E1214 00:32:55.566722   10128 watch.go:31] Failed to load config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:32:55.566722   10128 watch.go:31] Failed to load config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[debug] [2025-12-13T19:03:05.567Z] E1214 00:33:05.566759   10128 watch.go:31] Failed to load config from "e:\\identra\\dataconnect": could not find dataconnect.yaml in `e:\identra\dataconnect`
+ {"metadata":{"emulator":{"name":"dataconnect"},"message":"E1214 00:33:05.566759   10128 watch.go:31] Failed to load config from \"e:\\\\identra\\\\dataconnect\": could not find dataconnect.yaml in `e:\\identra\\dataconnect`\n"}}
+[info] [Firebase Plugin] Stopping Data Connect toolkit
+[warn] !  Data Connect Emulator has exited upon receiving signal: SIGINT 

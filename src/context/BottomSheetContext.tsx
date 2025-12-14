@@ -4,6 +4,7 @@ import {
     BottomSheetModalProvider,
     BottomSheetView,
 } from '@gorhom/bottom-sheet';
+import * as Haptics from "expo-haptics";
 import React, {
     createContext,
     ReactNode,
@@ -91,6 +92,7 @@ export function BottomSheetProvider({ children }: { children: ReactNode }) {
 
     // Present a sheet
     const present = useCallback((id: string, config: SheetConfig) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
         const newSheet: SheetState = { id, config };
 
         // If a sheet is already open, queue the new one

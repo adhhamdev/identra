@@ -20,6 +20,7 @@ import {
 
 import { AuthProvider } from "@/context/AuthContext";
 import { BottomSheetProvider } from "@/context/BottomSheetContext";
+import { ModalProvider } from "@/context/ModalContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -49,15 +50,17 @@ export default function RootLayout() {
       <ThemeProvider>
         <AuthProvider>
           <BottomSheetProvider>
-            <NavThemeProvider
-              value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-            >
-              <Stack>
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-            </NavThemeProvider>
+            <ModalProvider>
+              <NavThemeProvider
+                value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+              >
+                <Stack>
+                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="+not-found" />
+                </Stack>
+              </NavThemeProvider>
+            </ModalProvider>
           </BottomSheetProvider>
         </AuthProvider>
       </ThemeProvider>

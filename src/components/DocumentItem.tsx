@@ -13,6 +13,8 @@ interface DocumentItemProps {
     iconBg: string;
     type: 'grid' | 'list';
     isLocked?: boolean;
+    onShare?: () => void;
+    onEdit?: () => void;
 }
 
 export default function DocumentItem({
@@ -23,12 +25,28 @@ export default function DocumentItem({
     iconBg,
     type,
     isLocked,
+    onShare,
+    onEdit,
 }: DocumentItemProps) {
     const { colors } = useTheme();
+    const lastTap = React.useRef<number>(0);
+
+    const handlePress = () => {
+        const now = Date.now();
+        if (now - lastTap.current < 300) {
+            onEdit?.();
+        }
+        lastTap.current = now;
+    };
 
     if (type === 'grid') {
         return (
-            <TouchableOpacity style={[styles.gridContainer, { backgroundColor: colors.card }]}>
+            <TouchableOpacity
+                style={[styles.gridContainer, { backgroundColor: colors.card }]}
+                onLongPress={onShare}
+                onPress={handlePress}
+                activeOpacity={0.7}
+            >
                 <View style={styles.gridHeader}>
                     <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
                         <Icon size={20} color={iconColor} />
@@ -44,7 +62,12 @@ export default function DocumentItem({
     }
 
     return (
-        <TouchableOpacity style={[styles.listContainer, { backgroundColor: colors.card }]}>
+        <TouchableOpacity
+            style={[styles.listContainer, { backgroundColor: colors.card }]}
+            onLongPress={onShare}
+            onPress={handlePress}
+            activeOpacity={0.7}
+        >
             <View style={styles.listLeft}>
                 <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
                     <Icon size={20} color={iconColor} />

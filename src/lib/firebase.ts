@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
-import { Auth, getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
+import { Auth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import { Functions, getFunctions } from 'firebase/functions';
+import { getStorage } from 'firebase/storage';
 import { Platform } from 'react-native';
 
 type FirebaseConfigGroup = {
@@ -47,14 +49,9 @@ function initFirebaseApp(): FirebaseApp {
 }
 
 function initFirebaseAuth(app: FirebaseApp): Auth {
-  if (Platform.OS === 'web') {
-    // Web supports RN persistence for Expo Router
-    return initializeAuth(app, {
-      persistence: getReactNativePersistence(AsyncStorage),
-    });
-  }
-
-  return getAuth(app);
+  return initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
 }
 
 function initFirebaseFunctions(app: FirebaseApp): Functions {
@@ -65,3 +62,5 @@ function initFirebaseFunctions(app: FirebaseApp): Functions {
 export const app = initFirebaseApp();
 export const auth = initFirebaseAuth(app);
 export const functions = initFirebaseFunctions(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);

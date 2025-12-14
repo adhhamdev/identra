@@ -60,7 +60,7 @@ export default function TabLayout() {
   const isLight = colorScheme !== "dark";
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, initializing } = useAuth();
+  const { user, userProfile, initializing } = useAuth();
 
   const isOAuthUser = user?.providerData.some(
     (p: UserInfo) => p.providerId !== "password"
@@ -69,10 +69,26 @@ export default function TabLayout() {
 
   useEffect(() => {
     if (initializing) return;
+
     if (!user || !isVerified) {
       router.replace("/(auth)/sign-in" as any);
     }
   }, [user, isVerified, initializing, router]);
+
+  useEffect(() => {
+    if (initializing) return;
+
+    // Only check NIC if user is verified
+    if (user && isVerified && userProfile !== undefined) {
+      // Check if profile is loaded and nic_last4 is explicitly missing
+      // useProfile is null if doc doesn't exist, or object.
+      // If null, we might need to create one, or redirect to add-nic to create it.
+      // Here we check if nic_last4 is missing.
+      if (userProfile === null || !userProfile?.nic_last4) {
+        router.replace("/(auth)/add-nic" as any);
+      }
+    }
+  }, [user, isVerified, userProfile, initializing, router]);
 
   // Calculate proper bottom padding with safe area
   const bottomPadding = Math.max(

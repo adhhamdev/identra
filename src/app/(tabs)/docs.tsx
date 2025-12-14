@@ -5,12 +5,73 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CertificateCard from '@/components/CertificateCard';
 import DocumentItem from '@/components/DocumentItem';
+import EditDocumentSheet from '@/components/EditDocumentSheet';
+import ShareDocumentSheet from '@/components/ShareDocumentSheet';
 import { Layout } from '@/constants/Layout';
 import { Typography } from '@/constants/Typography';
+import { useBottomSheet } from '@/context/BottomSheetContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useDocumentManagement } from '@/hooks/useDocumentManagement';
+import { useDocuments } from '@/hooks/useDocuments';
 
 export default function DocsScreen() {
     const { colors, isDark } = useTheme();
+    const { present } = useBottomSheet();
+    const { documents, loading } = useDocuments();
+    const { updateDocument, deleteDocument } = useDocumentManagement();
+
+    const handleEdit = (doc: any) => {
+        present('edit-document', {
+            component: EditDocumentSheet,
+            snapPoints: ['68%'],
+            props: {
+                document: doc,
+                onSave: updateDocument,
+                onDelete: deleteDocument
+            }
+        });
+    };
+
+    const handleShare = (doc: any) => {
+        present('share-document', {
+            component: ShareDocumentSheet,
+            snapPoints: ['68%'],
+            props: {
+                document: doc
+            }
+        });
+    };
+
+    // Group documents (NIC/Passport/DL -> Certificates, Others -> Other)
+    const certificates = documents.filter(doc =>
+        ['NIC', 'Passport', 'Driver\'s License'].includes(doc.type)
+    );
+
+    const otherDocs = documents.filter(doc =>
+        !['NIC', 'Passport', 'Driver\'s License'].includes(doc.type)
+    );
+
+    const getIcon = (type: string) => {
+        switch (type) {
+            case 'NIC': return Shield;
+            case 'Passport': return Globe;
+            case 'Driver\'s License': return Car;
+            case 'Bank Card': return FileText;
+            case 'Certificate': return BriefcaseMedical;
+            default: return FileText;
+        }
+    };
+
+    const getColor = (type: string, isIcon: boolean = false) => {
+        // Simple color mapping
+        switch (type) {
+            case 'NIC': return '#009688';
+            case 'Passport': return '#9C27B0';
+            case 'Driver\'s License': return '#4285F4';
+            case 'Bank Card': return '#FFC107';
+            default: return '#607D8B';
+        }
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
@@ -38,72 +99,57 @@ export default function DocsScreen() {
                 <View style={styles.sectionHeader}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>Identity Certificates</Text>
                     <View style={[styles.badge, { backgroundColor: isDark ? 'rgba(0,150,136,0.2)' : '#E0F2F1' }]}>
-                        <Text style={styles.badgeText}>2 Items</Text>
+                        <Text style={styles.badgeText}>{certificates.length} Items</Text>
                     </View>
                 </View>
 
-                <CertificateCard
-                    title="Driver's License"
-                    subtitle="ID: D-4920-5822"
-                    status="Valid"
-                    expiry="12/2025"
-                    icon={Car}
-                    color="#4285F4"
-                    previewImage="https://randomuser.me/api/portraits/men/32.jpg"
-                />
-                <CertificateCard
-                    title="Passport"
-                    subtitle="USA • P-9928102"
-                    status="Valid"
-                    expiry="08/2029"
-                    icon={Globe}
-                    color="#9C27B0"
-                />
+                {certificates.map(doc => (
+                    <CertificateCard
+                        key={doc.id}
+                        title={doc.type}
+                        subtitle={doc.title}
+                        status="Valid" // Hardcoded for MVP
+                        expiry={doc.expiryDate || "No Expiry"}
+                        icon={getIcon(doc.type)}
+                        color={getColor(doc.type)}
+                        previewImage={doc.downloadUrl}
+                        onEdit={() => handleEdit(doc)}
+                        onShare={() => handleShare(doc)}
+                    />
+                ))}
 
                 {/* Other Documents Section */}
                 <View style={styles.sectionHeader}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>Other Documents</Text>
                     <View style={[styles.badge, { backgroundColor: isDark ? 'rgba(0,150,136,0.2)' : '#E0F2F1' }]}>
-                        <Text style={styles.badgeText}>3 Items</Text>
+                        <Text style={styles.badgeText}>{otherDocs.length} Items</Text>
                     </View>
                 </View>
 
                 <View style={styles.gridRow}>
-                    <DocumentItem
-                        title="Vaccination Certificate"
-                        subtitle="Updated 2mo ago"
-                        icon={BriefcaseMedical}
-                        iconColor="#F44336"
-                        iconBg={isDark ? 'rgba(244,67,54,0.15)' : '#FFEBEE'}
-                        type="grid"
-                        isLocked
-                    />
-                    <DocumentItem
-                        title="Insurance Policy"
-                        subtitle="Renewal in 15d"
-                        icon={Shield}
-                        iconColor="#FFC107"
-                        iconBg={isDark ? 'rgba(255,193,7,0.15)' : '#FFF8E1'}
-                        type="grid"
-                        isLocked
-                    />
+                    {otherDocs.map(doc => (
+                        <DocumentItem
+                            key={doc.id}
+                            title={doc.title}
+                            subtitle={doc.createdAt?.toDate().toLocaleDateString() || 'Just now'}
+                            icon={getIcon(doc.type)}
+                            iconColor={getColor(doc.type)}
+                            iconBg={isDark ? `${getColor(doc.type)}20` : `${getColor(doc.type)}20`}
+                            type="grid"
+                            onEdit={() => handleEdit(doc)}
+                            onShare={() => handleShare(doc)}
+                        />
+                    ))}
                 </View>
-
-                <DocumentItem
-                    title="Tax Return 2023"
-                    subtitle="PDF • 2.4 MB"
-                    icon={FileText}
-                    iconColor="#607D8B"
-                    iconBg={isDark ? 'rgba(96,125,139,0.15)' : '#ECEFF1'}
-                    type="list"
-                />
 
             </ScrollView>
 
-            {/* FAB */}
+            {/* FAB can be wired up later if needed, but Add is in Tabs */}
             <TouchableOpacity style={styles.fab}>
                 <Plus size={32} color="#000" />
             </TouchableOpacity>
+
+
         </SafeAreaView>
     );
 }

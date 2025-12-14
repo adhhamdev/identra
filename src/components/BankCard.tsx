@@ -1,61 +1,85 @@
 import { Layout } from '@/constants/Layout';
 import { Typography } from '@/constants/Typography';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Wifi } from 'lucide-react-native'; // Wifi for contactless
+import { Wifi } from 'lucide-react-native';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export type CardTheme = 'dark' | 'teal' | 'light';
+export type CardTheme = 'dark' | 'teal' | 'light' | 'purple' | 'blue' | 'orange' | string;
 
 interface BankCardProps {
-    bankName: string;
+    cardholderName: string;
     cardType: string;
-    cardNumber: string; // Last 4 digits
+    cardNumber: string; // Last 4 digits or masked
     balance?: string;
     expiry?: string;
     theme: CardTheme;
-    network: 'Visa' | 'Mastercard';
+    network: string;
+    onPress?: () => void;
+    onLongPress?: () => void;
 }
 
 export default function BankCard({
-    bankName,
+    cardholderName,
     cardType,
     cardNumber,
     balance,
     expiry,
     theme,
     network,
+    onPress,
+    onLongPress,
 }: BankCardProps) {
+    const lastTap = React.useRef<number>(0);
+
+    const handlePress = () => {
+        onPress?.();
+    };
+
     const getThemeStyles = () => {
         switch (theme) {
             case 'dark':
                 return {
-                    background: ['#1A1F2C', '#12141A'], // Dark Navy/Black
+                    background: ['#1A1F2C', '#12141A'],
                     textColor: '#FFF',
                     secondaryColor: '#A0A0A0',
-                    accentColor: '#FFF',
                 };
             case 'teal':
                 return {
-                    background: ['#00E5CC', '#00C4A7'], // Bright Teal
+                    background: ['#00E5CC', '#00C4A7'],
                     textColor: '#000',
                     secondaryColor: 'rgba(0,0,0,0.6)',
-                    accentColor: '#000',
                 };
             case 'light':
                 return {
-                    background: ['#FFFFFF', '#F9F9F9'], // White
+                    background: ['#FFFFFF', '#F9F9F9'],
                     textColor: '#000',
                     secondaryColor: '#888',
-                    accentColor: '#000',
                     borderColor: '#E0E0E0',
+                };
+            case 'purple':
+                return {
+                    background: ['#9C27B0', '#7B1FA2'],
+                    textColor: '#FFF',
+                    secondaryColor: '#E1BEE7',
+                };
+            case 'blue':
+                return {
+                    background: ['#2196F3', '#1976D2'],
+                    textColor: '#FFF',
+                    secondaryColor: '#BBDEFB',
+                };
+            case 'orange':
+                return {
+                    background: ['#FF9800', '#F57C00'],
+                    textColor: '#FFF',
+                    secondaryColor: '#FFE0B2',
                 };
             default:
                 return {
                     background: ['#1A1F2C', '#12141A'],
                     textColor: '#FFF',
                     secondaryColor: '#A0A0A0',
-                    accentColor: '#FFF',
                 };
         }
     };
@@ -63,19 +87,21 @@ export default function BankCard({
     const themeStyles = getThemeStyles();
 
     return (
-        <View style={[styles.container, theme === 'light' && { borderWidth: 1, borderColor: themeStyles.borderColor }]}>
+        <TouchableOpacity
+            style={[styles.container, theme === 'light' && { borderWidth: 1, borderColor: themeStyles.borderColor }]}
+            onPress={handlePress}
+            onLongPress={onLongPress}
+            activeOpacity={0.9}
+        >
             <LinearGradient
                 colors={themeStyles.background as [string, string]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.card}
             >
-                {/* Header */}
+                {/* Header: Network + Contactless */}
                 <View style={styles.header}>
-                    <View>
-                        <Text style={[styles.bankName, { color: themeStyles.textColor }]}>{bankName}</Text>
-                        <Text style={[styles.cardType, { color: themeStyles.secondaryColor }]}>{cardType}</Text>
-                    </View>
+                    <Text style={[styles.networkTitle, { color: themeStyles.textColor }]}>{network}</Text>
                     <Wifi size={24} color={themeStyles.textColor} style={{ transform: [{ rotate: '90deg' }] }} />
                 </View>
 
@@ -84,25 +110,25 @@ export default function BankCard({
 
                 {/* Number */}
                 <View style={styles.numberContainer}>
-                    <Text style={[styles.dots, { color: themeStyles.textColor }]}>**** **** ****</Text>
+                    {/* Show visual dots for masked part? */}
+                    {/* Assuming input is masked like **** **** **** 1234 */}
                     <Text style={[styles.number, { color: themeStyles.textColor }]}>{cardNumber}</Text>
                 </View>
 
-                {/* Footer */}
+                {/* Footer: Details */}
                 <View style={styles.footer}>
                     <View>
-                        {balance ? (
-                            <Text style={[styles.balance, { color: themeStyles.textColor }]}>{balance}</Text>
-                        ) : (
-                            <Text style={[styles.expiry, { color: themeStyles.secondaryColor }]}>Exp {expiry}</Text>
-                        )}
-                        {balance && theme === 'teal' && <Text style={[styles.cardType, { color: themeStyles.secondaryColor }]}>Checking Account</Text>}
+                        <Text style={[styles.label, { color: themeStyles.secondaryColor }]}>Cardholder Name</Text>
+                        <Text style={[styles.value, { color: themeStyles.textColor }]}>{cardholderName || 'John Doe'}</Text>
                     </View>
-
-                    <Text style={[styles.network, { color: themeStyles.textColor }]}>{network.toUpperCase()}</Text>
+                    <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={[styles.label, { color: themeStyles.secondaryColor }]}>Expires</Text>
+                        <Text style={[styles.value, { color: themeStyles.textColor }]}>{expiry || 'MM/YY'}</Text>
+                    </View>
                 </View>
+                <Text style={[styles.cardType, { color: themeStyles.secondaryColor }]}>{cardType}</Text>
             </LinearGradient>
-        </View>
+        </TouchableOpacity>
     );
 }
 
@@ -111,67 +137,63 @@ const styles = StyleSheet.create({
         ...Layout.shadows.soft,
         marginHorizontal: Layout.spacing.l,
         marginBottom: Layout.spacing.l,
-        borderRadius: Layout.borderRadius.l,
-        overflow: 'hidden', // Ensure gradient respects border radius
+        borderRadius: 16, // More rounded
+        overflow: 'hidden',
     },
     card: {
-        padding: Layout.spacing.l,
-        height: 200,
-        justifyContent: 'space-between',
+        padding: 24, // More padding
+        height: 220, // Taller
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
+        marginBottom: 20,
     },
-    bankName: {
-        fontFamily: Typography.fontFamily.bold,
-        fontSize: 18,
-        marginBottom: 4,
-    },
-    cardType: {
-        fontFamily: Typography.fontFamily.medium,
-        fontSize: 12,
+    networkTitle: {
+        fontFamily: Typography.fontFamily.bold, // Italic often used for Visa
+        fontStyle: 'italic',
+        fontSize: 22,
     },
     chip: {
-        width: 40,
-        height: 28,
+        width: 44,
+        height: 32,
         borderRadius: 6,
-        backgroundColor: '#E0C157', // Gold chip color
-        marginTop: Layout.spacing.m,
+        backgroundColor: '#E0C157',
+        alignSelf: 'flex-start',
+        marginBottom: 20,
     },
     numberContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: Layout.spacing.s,
-    },
-    dots: {
-        fontFamily: Typography.fontFamily.bold,
-        fontSize: 18,
-        marginRight: Layout.spacing.m,
-        letterSpacing: 2,
+        marginBottom: 'auto',
     },
     number: {
-        fontFamily: Typography.fontFamily.medium, // Monospace-ish
-        fontSize: 20,
+        fontFamily: Typography.fontFamily.medium,
+        fontSize: 22,
         letterSpacing: 2,
     },
     footer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
+        marginBottom: 8,
     },
-    balance: {
+    label: {
+        fontSize: 10,
         fontFamily: Typography.fontFamily.medium,
-        fontSize: 16,
+        textTransform: 'uppercase',
+        marginBottom: 2,
     },
-    expiry: {
+    value: {
+        fontSize: 16,
+        fontFamily: Typography.fontFamily.semiBold,
+    },
+    cardType: {
+        position: 'absolute',
+        bottom: 24,
+        right: 24, // Or center?
+        fontSize: 12,
         fontFamily: Typography.fontFamily.medium,
-        fontSize: 14,
-    },
-    network: {
-        fontFamily: Typography.fontFamily.bold, // Italic often used for Visa
-        fontStyle: 'italic',
-        fontSize: 16,
-    },
+        alignSelf: 'flex-end',
+        display: 'none' // Hidden for now, cleaner look
+    }
 });

@@ -1,28 +1,43 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import {
+  ArrowRight,
+  IdCard,
+  Lock,
+} from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/Colors";
 import { Typography } from "@/constants/Typography";
 import { useAuth } from "@/context/AuthContext";
-import { functions } from "@/lib/firebase";
+import { auth, functions } from "@/lib/firebase";
 import { parseNIC, validateNIC } from "@/lib/nic";
+import { validateAndRegisterNICResponse } from "@/types/functions";
 import { httpsCallable } from "firebase/functions";
 
 export default function AddNICScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userProfile, refreshUser } = useAuth();
   const [nic, setNic] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (userProfile?.nic_last4) {
+      router.replace("/(tabs)" as any);
+    }
+  }, [userProfile, router]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -46,33 +61,42 @@ export default function AddNICScreen() {
 
     setLoading(true);
     try {
-      // Call Cloud Function validateAndRegisterNIC
+      if (auth.currentUser) {
+        await auth.currentUser.reload();
+        await auth.currentUser.getIdToken(true);
+      }
+
+      if (auth.currentUser?.emailVerified === false) {
+        throw new Error(
+          "Please verify your email address before continuing. Check your inbox."
+        );
+      }
+
       const validateAndRegisterNIC = httpsCallable(
         functions,
         "validateAndRegisterNIC"
       );
-      const result = await validateAndRegisterNIC({ nic: trimmedNic });
+      const result = (await validateAndRegisterNIC({ nic: trimmedNic }))
+        .data as validateAndRegisterNICResponse;
 
-      if (result.data?.success) {
-        const data = result.data.data;
+      if (result.success) {
+        const data = result.data;
         Alert.alert(
           "NIC Added",
-          `Your NIC has been validated.\n\nDate of Birth: ${
-            data.dob
-          }\nGender: ${
-            data.gender.charAt(0).toUpperCase() + data.gender.slice(1)
+          `Your NIC has been validated.\n\nDate of Birth: ${data?.dob
+          }\nGender: ${data?.gender
+            ? data?.gender.charAt(0).toUpperCase() + data?.gender.slice(1)
+            : "Unknown"
           }`,
           [
             {
               text: "OK",
-              onPress: () => router.replace("/(tabs)/index"),
+              onPress: () => router.replace("/"),
             },
           ]
         );
       } else {
-        setError(
-          result.data?.error || "Failed to register NIC. Please try again."
-        );
+        setError(result?.error || "Failed to register NIC. Please try again.");
       }
     } catch (err: any) {
       console.error("NIC registration error:", err);
@@ -83,164 +107,184 @@ export default function AddNICScreen() {
   };
 
   const formatNICInput = (text: string) => {
-    // Remove spaces and convert to uppercase
     const cleaned = text.replace(/\s/g, "").toUpperCase();
     setNic(cleaned);
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="card-outline" size={48} color={Colors.light.tint} />
-          </View>
-          <Text style={styles.title}>Add Your NIC</Text>
-          <Text style={styles.subtitle}>
-            Enter your National Identity Card number to verify your identity
-          </Text>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardView}
+      >
+        {/* Header */}
+        <View style={styles.headerBar}>
+          <Text style={styles.headerTitle}>Add Your NIC</Text>
+          <View style={{ width: 28 }} />
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>NIC Number</Text>
-            <TextInput
-              style={[styles.input, error && styles.inputError]}
-              value={nic}
-              onChangeText={formatNICInput}
-              placeholder="e.g., 981234567V or 199812345678"
-              placeholderTextColor={Colors.light.tint}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              keyboardType="default"
-              maxLength={12}
-            />
-            {error && (
-              <View style={styles.errorContainer}>
-                <Ionicons name="alert-circle" size={16} color="#EF4444" />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
-            <Text style={styles.hint}>
-              Enter your 10-digit old format (ending with V/X) or 12-digit new
-              format NIC number
-            </Text>
-          </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.mainContent}>
+            <Text style={styles.mainTitle}>Link your National ID</Text>
 
+            {/* Input Section */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>NIC Number</Text>
+              <View style={[styles.inputWrapper, { borderColor: "#E5E7EB" }]}>
+                <TextInput
+                  style={styles.input}
+                  value={nic}
+                  onChangeText={formatNICInput}
+                  placeholder="e.g. 199012345678"
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="characters"
+                  maxLength={12}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSubmit}
+                  blurOnSubmit={true}
+                />
+                <IdCard size={24} color="#9CA3AF" />
+              </View>
+              {error && <Text style={styles.errorText}>{error}</Text>}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Footer Section (Button + Security Text) */}
+        <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.verifyButton, loading && { opacity: 0.7 }]}
             onPress={handleSubmit}
             disabled={loading || !nic.trim()}
           >
-            <Text
-              style={[styles.buttonText, loading && styles.buttonTextDisabled]}
-            >
-              {loading ? "Validating..." : "Continue"}
+            <Text style={styles.verifyButtonText}>
+              {loading ? "Verifying..." : "Verify & Continue"}
             </Text>
+            {!loading && <ArrowRight size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />}
           </TouchableOpacity>
+
+          <View style={styles.securityNote}>
+            <Lock size={14} color="#9CA3AF" />
+            <Text style={styles.securityText}>
+              Your data is encrypted and stored locally
+            </Text>
+          </View>
         </View>
-      </View>
-    </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: "#F9FAFB", // Light background from image
   },
-  content: {
+  keyboardView: {
     flex: 1,
-    padding: 24,
-    justifyContent: "center",
   },
-  header: {
+  headerBar: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 48,
+    justifyContent: "center", // Centered since no back button
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
-  iconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: "rgba(0, 196, 167, 0.1)",
-    justifyContent: "center",
+  headerTitle: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 18,
+    color: "#111827",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+  },
+  mainContent: {
+    marginTop: 40,
     alignItems: "center",
-    marginBottom: 24,
   },
-  title: {
+  mainTitle: {
     fontFamily: Typography.fontFamily.bold,
-    fontSize: 28,
-    color: Colors.light.text,
-    marginBottom: 8,
+    fontSize: 26,
+    color: "#111827",
+    marginBottom: 40,
     textAlign: "center",
-  },
-  subtitle: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 16,
-    color: Colors.light.textSecondary,
-    textAlign: "center",
-    lineHeight: 24,
-  },
-  form: {
-    width: "100%",
   },
   inputContainer: {
-    marginBottom: 32,
+    width: "100%",
   },
   label: {
     fontFamily: Typography.fontFamily.medium,
-    fontSize: 16,
-    color: Colors.light.text,
+    fontSize: 14,
+    color: "#111827",
     marginBottom: 8,
+    marginLeft: 4,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
-    fontFamily: Typography.fontFamily.regular,
-    color: Colors.light.text,
-    backgroundColor: Colors.light.background,
-  },
-  inputError: {
-    borderColor: "#EF4444",
-  },
-  errorContainer: {
+  inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
-    gap: 6,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderRadius: 30, // Pill shape
+    paddingHorizontal: 20, // More padding for pill shape
+    height: 56,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: Typography.fontFamily.medium,
+    color: "#1F2937",
+    paddingRight: 10,
   },
   errorText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 14,
     color: "#EF4444",
-    flex: 1,
-  },
-  hint: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: 13,
-    color: Colors.light.tint,
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 14,
     marginTop: 8,
-    lineHeight: 18,
+    marginLeft: 4,
   },
-  button: {
-    backgroundColor: Colors.light.tint,
-    borderRadius: 12,
-    paddingVertical: 16,
+  footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+  },
+  verifyButton: {
+    backgroundColor: Colors.light.tint, // Green check
+    borderRadius: 30, // Pill shape
+    height: 56,
+    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
+    marginBottom: 20,
+    shadowColor: Colors.light.tint,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  buttonDisabled: {
-    backgroundColor: "#D1D5DB",
-  },
-  buttonText: {
-    fontFamily: Typography.fontFamily.semiBold,
+  verifyButtonText: {
+    color: "#FFFFFF",
+    fontFamily: Typography.fontFamily.bold,
     fontSize: 16,
-    color: "white",
   },
-  buttonTextDisabled: {
+  securityNote: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  securityText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: 12, // Small text
     color: "#9CA3AF",
   },
 });

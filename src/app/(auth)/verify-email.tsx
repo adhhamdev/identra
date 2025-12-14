@@ -1,11 +1,13 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/Colors";
 import { Layout } from "@/constants/Layout";
 import { Typography } from "@/constants/Typography";
 import { useAuth } from "@/context/AuthContext";
+import { auth } from "@/lib/firebase";
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
@@ -22,10 +24,9 @@ export default function VerifyEmailScreen() {
       return;
     }
 
-    // Check if user has already added NIC (you can check a flag in user profile)
-    // For now, we'll redirect verified users to add-nic screen
     if (user.emailVerified) {
-      router.replace("/(auth)/add-nic" as any);
+      // Redirect to root, let the layout handle NIC check
+      router.replace("/");
     }
   }, [user, initializing, router]);
 
@@ -47,8 +48,10 @@ export default function VerifyEmailScreen() {
     setLoading(true);
     try {
       await refreshUser();
-      if (user?.emailVerified) {
-        router.replace("/(auth)/add-nic");
+
+      const currentUser = auth.currentUser;
+      if (currentUser?.emailVerified) {
+        router.replace("/");
       } else {
         setStatus("Not verified yet. Please check your inbox and try again.");
       }
@@ -60,41 +63,43 @@ export default function VerifyEmailScreen() {
   };
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: Colors.light.background }]}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: Colors.light.background }]} edges={['top', 'bottom']}
     >
-      <Text style={styles.title}>Verify your email</Text>
-      <Text style={styles.subtitle}>
-        We’ve sent a verification link to {user?.email}. Please verify to
-        continue.
-      </Text>
-
-      {status ? <Text style={styles.status}>{status}</Text> : null}
-
-      <TouchableOpacity
-        style={styles.primaryButton}
-        onPress={handleCheck}
-        disabled={loading}
-      >
-        <Text style={styles.primaryButtonText}>
-          {loading ? "Checking..." : "I have verified"}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.title}>Verify your email</Text>
+        <Text style={styles.subtitle}>
+          We’ve sent a verification link to {user?.email}. Please verify to
+          continue.
         </Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.secondaryButton}
-        onPress={handleResend}
-        disabled={sending}
-      >
-        <Text style={styles.secondaryButtonText}>
-          {sending ? "Sending..." : "Resend email"}
-        </Text>
-      </TouchableOpacity>
+        {status ? <Text style={styles.status}>{status}</Text> : null}
 
-      <TouchableOpacity style={styles.linkButton} onPress={signOut}>
-        <Text style={styles.linkText}>Sign out</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={handleCheck}
+          disabled={loading}
+        >
+          <Text style={styles.primaryButtonText}>
+            {loading ? "Checking..." : "I have verified"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={handleResend}
+          disabled={sending}
+        >
+          <Text style={styles.secondaryButtonText}>
+            {sending ? "Sending..." : "Resend email"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.linkButton} onPress={signOut}>
+          <Text style={styles.linkText}>Sign out</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 

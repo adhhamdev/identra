@@ -1,45 +1,51 @@
 import * as Google from "expo-auth-session/providers/google";
+import Constants from "expo-constants";
 import { Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useEffect, useMemo, useState } from "react";
 import {
+  Chrome,
+  Eye,
+  EyeOff,
+  Fingerprint,
+  Lock,
+  User,
+  Wallet
+} from "lucide-react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Colors } from "@/constants/Colors";
-import { Layout } from "@/constants/Layout";
 import { Typography } from "@/constants/Typography";
 import { useAuth } from "@/context/AuthContext";
-import Constants from "expo-constants";
+import { useTheme } from "@/context/ThemeContext";
 
 WebBrowser.maybeCompleteAuthSession();
-
-type Extra = {
-  google?: {
-    webClientId?: string;
-    iosClientId?: string;
-    androidClientId?: string;
-  };
-};
 
 export default function SignInScreen() {
   const router = useRouter();
   const { signIn, signInWithGoogleTokens, user, initializing } = useAuth();
+  const { colors, isDark } = useTheme();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ⬇️ Pull google client IDs ONLY from app.config.js (Expo recommended approach)
+  const passwordRef = useRef<TextInput>(null);
+
+  // Google Configuration
   const googleConfig = useMemo(() => {
     const extra = Constants.expoConfig?.extra;
-
     return {
       webClientId: extra?.google?.webClientId ?? "",
       iosClientId: extra?.google?.iosClientId ?? "",
@@ -47,7 +53,6 @@ export default function SignInScreen() {
     };
   }, []);
 
-  // ⬇️ Create auth request
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: googleConfig.webClientId,
     iosClientId: googleConfig.iosClientId,
@@ -55,7 +60,6 @@ export default function SignInScreen() {
     selectAccount: true,
   });
 
-  // ⬇️ Handle Google response → Firebase credential sign-in
   useEffect(() => {
     if (response?.type === "success") {
       const { idToken, accessToken } = response.authentication ?? {};
@@ -67,10 +71,8 @@ export default function SignInScreen() {
     }
   }, [response]);
 
-  // ⬇️ Post-login redirects
   useEffect(() => {
     if (initializing) return;
-
     if (!user) return;
 
     const isOAuthUser = user.providerData.some(
@@ -78,18 +80,23 @@ export default function SignInScreen() {
     );
 
     if (user.emailVerified || isOAuthUser) {
-      router.replace("/(auth)/add-nic" as any);
+      router.replace("/");
     } else {
-      router.replace("/(auth)/verify-email" as any);
+      router.replace("/(auth)/verify-email");
     }
   }, [user, initializing]);
 
   const onSubmit = async () => {
     setError(null);
+
+    if (!email.trim() || !email.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
     setLoading(true);
     try {
       await signIn(email, password);
-      router.replace("/(tabs)");
     } catch (err: any) {
       setError(err?.message ?? "Failed to sign in");
     } finally {
@@ -97,190 +104,294 @@ export default function SignInScreen() {
     }
   };
 
-  // ⬇️ Google button should only show if platform supports its client ID
-  const canUseGoogle =
-    (Platform.OS === "android" && googleConfig.androidClientId) ||
-    (Platform.OS === "ios" && googleConfig.iosClientId) ||
-    (Platform.OS === "web" && googleConfig.webClientId);
-
   const handleGoogle = async () => {
     setError(null);
     const result = await promptAsync();
     if (result?.type === "dismiss") return;
   };
 
+  const canUseGoogle =
+    (Platform.OS === "android" && googleConfig.androidClientId) ||
+    (Platform.OS === "ios" && googleConfig.iosClientId) ||
+    (Platform.OS === "web" && googleConfig.webClientId);
+
   return (
-    <View
-      style={[styles.container, { backgroundColor: Colors.light.background }]}
-    >
-      <Text style={styles.title}>Welcome back</Text>
-      <Text style={styles.subtitle}>Sign in to continue</Text>
-
-      <View style={styles.form}>
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          placeholder="you@example.com"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          style={styles.input}
-        />
-
-        <Text style={[styles.label, { marginTop: 12 }]}>Password</Text>
-        <TextInput
-          placeholder="••••••••"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-        />
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={onSubmit}
-          disabled={loading}
-        >
-          <Text style={styles.primaryButtonText}>
-            {loading ? "Signing in..." : "Sign In"}
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.linksRow}>
-          <Text style={styles.linkText}>No account?</Text>
-          <Link href="/(auth)/sign-up" style={styles.link}>
-            Sign up
-          </Link>
-        </View>
-      </View>
-
-      <View style={styles.dividerRow}>
-        <View style={styles.divider} />
-        <Text style={styles.dividerText}>or</Text>
-        <View style={styles.divider} />
-      </View>
-
-      <TouchableOpacity
-        style={[styles.secondaryButton, !canUseGoogle && styles.disabledButton]}
-        onPress={handleGoogle}
-        disabled={!request || !canUseGoogle}
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.background : "#F4F9F8" }]} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <Text style={styles.secondaryButtonText}>Continue with Google</Text>
-      </TouchableOpacity>
-      {!canUseGoogle ? (
-        <Text style={styles.info}>
-          Add Google client IDs in app.json extra.google
-        </Text>
-      ) : null}
-    </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <Wallet size={32} color="#00C4A7" />
+            </View>
+            <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Sign in to access your wallet
+            </Text>
+          </View>
+
+          {/* Form Section */}
+          <View style={styles.form}>
+            {/* Email Input */}
+            <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.card : "#FFF" }]}>
+              <User size={20} color="#9CA3AF" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor="#9CA3AF"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                submitBehavior="submit"
+                style={[styles.input, { color: colors.text }]}
+              />
+            </View>
+
+            {/* Password Input */}
+            <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.card : "#FFF", marginTop: 16 }]}>
+              <Lock size={20} color="#9CA3AF" style={styles.inputIcon} />
+              <TextInput
+                ref={passwordRef}
+                placeholder="Password"
+                placeholderTextColor="#9CA3AF"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                returnKeyType="go"
+                onSubmitEditing={onSubmit}
+                style={[styles.input, { color: colors.text }]}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color="#9CA3AF" />
+                ) : (
+                  <Eye size={20} color="#9CA3AF" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Forgot Password */}
+            <TouchableOpacity
+              style={styles.forgotPassword}
+              onPress={() => router.push("/(auth)/forgot-password")}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            {/* Error Message */}
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            {/* Login Button */}
+            <TouchableOpacity
+              style={styles.loginButton}
+              onPress={onSubmit}
+              disabled={loading}
+            >
+              <Text style={styles.loginButtonText}>
+                {loading ? "Logging in..." : "Log In"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Social Login Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social Buttons */}
+          <View style={styles.socialRow}>
+            <TouchableOpacity style={styles.socialButton}>
+              <Fingerprint size={24} color="#00C4A7" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.socialButton, !canUseGoogle && { opacity: 0.5 }]}
+              onPress={handleGoogle}
+              disabled={!request || !canUseGoogle}
+            >
+              <Chrome size={24} color="#EA4335" />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.socialButton}>
+              <Text style={{ fontSize: 24, fontWeight: 'bold', color: isDark ? '#FFF' : '#000' }}></Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={[styles.footerText, { color: colors.textSecondary }]}>
+              Don't have an account?{" "}
+            </Text>
+            <Link href="/(auth)/sign-up" asChild>
+              <TouchableOpacity>
+                <Text style={styles.signUpText}>Sign up</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: Layout.spacing.l,
-    paddingTop: Layout.spacing.xl,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    justifyContent: "center",
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  iconContainer: {
+    width: 64,
+    height: 64,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
   },
   title: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 28,
-    color: Colors.light.text,
+    marginBottom: 8,
   },
   subtitle: {
-    marginTop: 6,
     fontFamily: Typography.fontFamily.medium,
     fontSize: 16,
-    color: Colors.light.textSecondary,
   },
   form: {
-    marginTop: Layout.spacing.xl,
+    width: "100%",
   },
-  label: {
-    fontFamily: Typography.fontFamily.medium,
-    color: Colors.light.textSecondary,
-    marginBottom: 6,
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 30, // Highly rounded corners as per design
+    paddingHorizontal: 20,
+    height: 56,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: Layout.borderRadius.m,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontFamily: Typography.fontFamily.medium,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    color: Colors.light.text,
-  },
-  primaryButton: {
-    marginTop: Layout.spacing.l,
-    backgroundColor: Colors.light.tint,
-    paddingVertical: 14,
-    borderRadius: Layout.borderRadius.m,
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 16,
-  },
-  secondaryButton: {
-    marginTop: Layout.spacing.m,
-    borderColor: Colors.light.border,
-    borderWidth: 1,
-    paddingVertical: 14,
-    borderRadius: Layout.borderRadius.m,
-    alignItems: "center",
-    backgroundColor: Colors.light.surface,
-  },
-  secondaryButtonText: {
-    color: Colors.light.text,
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: 15,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  linksRow: {
-    marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  linkText: {
-    color: Colors.light.textSecondary,
-    fontFamily: Typography.fontFamily.medium,
-  },
-  link: {
-    color: Colors.light.tint,
-    fontFamily: Typography.fontFamily.bold,
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: Layout.spacing.l,
-    gap: 8,
-  },
-  divider: {
     flex: 1,
-    height: 1,
-    backgroundColor: Colors.light.border,
-  },
-  dividerText: {
-    color: Colors.light.textSecondary,
     fontFamily: Typography.fontFamily.medium,
+    fontSize: 16,
+    height: "100%",
+  },
+  eyeIcon: {
+    padding: 4,
+  },
+  forgotPassword: {
+    alignSelf: "flex-end",
+    marginTop: 12,
+    marginBottom: 24,
+  },
+  forgotPasswordText: {
+    color: "#00C4A7",
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 14,
   },
   error: {
-    marginTop: 10,
-    color: Colors.light.error,
+    color: "#FF5252",
     fontFamily: Typography.fontFamily.medium,
-  },
-  info: {
-    marginTop: 6,
-    color: Colors.light.textSecondary,
-    fontFamily: Typography.fontFamily.medium,
-    fontSize: 13,
     textAlign: "center",
+    marginBottom: 16,
+  },
+  loginButton: {
+    backgroundColor: "#00C4A7",
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#00C4A7",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  loginButtonText: {
+    color: "#FFFFFF",
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 18,
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 32,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#E5E7EB",
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: "#9CA3AF",
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: 12,
+    letterSpacing: 1,
+  },
+  socialRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 20,
+    marginBottom: 32,
+  },
+  socialButton: {
+    width: 56,
+    height: 56,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: "auto",
+  },
+  footerText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 14,
+  },
+  signUpText: {
+    color: "#00C4A7",
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 14,
   },
 });
