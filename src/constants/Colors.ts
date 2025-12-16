@@ -69,7 +69,7 @@ export const Colors = {
     background: '#000000',
     surface: '#1A1A1A',
     secondary: '#2A2A2A',
-    card: '#1A1A1A',
+    card: '#2A2A2A',
     border: '#2A2A2A',
 
     // Accent colors

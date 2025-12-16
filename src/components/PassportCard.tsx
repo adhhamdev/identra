@@ -3,7 +3,14 @@ import { Typography } from "@/constants/Typography";
 import { LinearGradient } from "expo-linear-gradient";
 import { AlertTriangle, Check, Wifi } from "lucide-react-native";
 import React from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from "react-native";
 
 export type PassportTheme = "navy" | "maroon";
 export type PassportStatus = "valid" | "expiring";
@@ -14,7 +21,10 @@ interface PassportCardProps {
   expires: string;
   status: PassportStatus;
   theme: PassportTheme;
-  flagUrl: string; // URL for the flag image
+  flagUrl: string;
+  style?: ViewStyle;
+  onPress?: () => void;
+  onLongPress?: () => void;
 }
 
 export default function PassportCard({
@@ -24,6 +34,9 @@ export default function PassportCard({
   status,
   theme,
   flagUrl,
+  style,
+  onPress,
+  onLongPress,
 }: PassportCardProps) {
   const getThemeStyles = () => {
     switch (theme) {
@@ -48,7 +61,12 @@ export default function PassportCard({
   const themeStyles = getThemeStyles();
 
   return (
-    <View style={styles.container}>
+    <TouchableOpacity
+      activeOpacity={0.95}
+      style={[styles.container, style]}
+      onPress={onPress}
+      onLongPress={onLongPress}
+    >
       <LinearGradient
         colors={themeStyles.background as [string, string]}
         start={{ x: 0, y: 0 }}
@@ -115,7 +133,7 @@ export default function PassportCard({
           />
         </View>
       </LinearGradient>
-    </View>
+    </TouchableOpacity>
   );
 }
 
