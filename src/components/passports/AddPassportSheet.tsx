@@ -1,6 +1,7 @@
 import { Typography } from "@/constants/Typography";
 import { useTheme } from "@/context/ThemeContext";
 import { PassportFormData, PassportRecord } from "@/types/passport";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import {
   CalendarDays,
   ChevronDown,
@@ -43,11 +44,21 @@ interface AddPassportSheetProps {
   onClose?: () => void;
 }
 
-const formatDateInput = (value: string) => {
-  const clean = value.replace(/[^0-9]/g, "");
-  if (clean.length <= 2) return clean;
-  if (clean.length <= 4) return `${clean.slice(0, 2)}/${clean.slice(2)}`;
-  return `${clean.slice(0, 2)}/${clean.slice(2, 4)}/${clean.slice(4, 8)}`;
+const formatDateInput = (text: string) => {
+  const digitsOnly = text.replace(/\D/g, "").slice(0, 8);
+  const mm = digitsOnly.slice(0, 2);
+  const dd = digitsOnly.slice(2, 4);
+  const yyyy = digitsOnly.slice(4, 8);
+
+  let formatted = mm;
+  if (dd) {
+    formatted = `${formatted}/${dd}`;
+  }
+  if (yyyy) {
+    formatted = `${formatted}/${yyyy}`;
+  }
+
+  return formatted;
 };
 
 const normalizeDate = (value: string) => {
@@ -77,6 +88,7 @@ export default function AddPassportSheet({
   const [passportNumber, setPassportNumber] = useState(
     initialData?.passportNumber || ""
   );
+
   const [nationality, setNationality] = useState(
     initialData?.nationality || ""
   );
@@ -95,6 +107,10 @@ export default function AddPassportSheet({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [countryPickerVisible, setCountryPickerVisible] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [activeDateField, setActiveDateField] = useState<
+    "dob" | "issue" | "expiry"
+  >("issue");
 
   const title = initialData ? "Edit Passport" : "Add Passport";
 
@@ -149,6 +165,75 @@ export default function AddPassportSheet({
       setSaving(false);
     }
   };
+
+  const parseDateForPicker = (value: string) => {
+    const normalized = normalizeDate(value);
+    const parsed = normalized ? new Date(normalized) : new Date();
+    return isNaN(parsed.getTime()) ? new Date() : parsed;
+  };
+
+  const openDatePicker = (field: "dob" | "issue" | "expiry") => {
+    setActiveDateField(field);
+    setShowDatePicker(true);
+  };
+
+  const handleDatePickerChange = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || new Date();
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+
+    if (event.type === "dismissed") {
+      setShowDatePicker(false);
+      return;
+    }
+
+    if (event.type === "set" || Platform.OS === "ios") {
+      const isoDate = currentDate.toISOString().split("T")[0];
+      const formatted = displayDate(isoDate);
+      switch (activeDateField) {
+        case "dob":
+          setDateOfBirth(formatted);
+          break;
+        case "issue":
+          setIssueDate(formatted);
+          break;
+        case "expiry":
+        default:
+          setExpiryDate(formatted);
+          break;
+      }
+    }
+  };
+
+  const pickerDateField = (
+    label: string,
+    value: string,
+    onPress: () => void
+  ) => (
+    <View style={styles.formGroup}>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>
+        {label}
+      </Text>
+      <TouchableOpacity
+        onPress={onPress}
+        style={[
+          styles.inputWrapper,
+          { backgroundColor: isDark ? colors.card : "#F5F7FA" },
+        ]}
+      >
+        <CalendarDays size={18} color="#9CA3AF" style={styles.leadingIcon} />
+        <Text
+          style={[
+            styles.input,
+            { color: value ? colors.text : colors.textSecondary },
+          ]}
+        >
+          {value || "Select Date"}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   const dateField = (
     label: string,
@@ -272,13 +357,19 @@ export default function AddPassportSheet({
           </View>
 
           <Text style={styles.sectionLabel}>DATES</Text>
-          {dateField("Date of Birth", dateOfBirth, setDateOfBirth)}
+          {pickerDateField("Date of Birth", dateOfBirth, () =>
+            openDatePicker("dob")
+          )}
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 12 }}>
-              {dateField("Issue Date", issueDate, setIssueDate)}
+              {pickerDateField("Issue Date", issueDate, () =>
+                openDatePicker("issue")
+              )}
             </View>
             <View style={{ flex: 1 }}>
-              {dateField("Expiry Date", expiryDate, setExpiryDate)}
+              {pickerDateField("Expiry Date", expiryDate, () =>
+                openDatePicker("expiry")
+              )}
             </View>
           </View>
 
@@ -300,6 +391,22 @@ export default function AddPassportSheet({
               Your passport data stays encrypted
             </Text>
           </View>
+          {showDatePicker && (
+            <DateTimePicker
+              value={parseDateForPicker(
+                activeDateField === "dob"
+                  ? dateOfBirth
+                  : activeDateField === "issue"
+                  ? issueDate
+                  : expiryDate
+              )}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={handleDatePickerChange}
+              minimumDate={new Date(1950, 0, 1)}
+              maximumDate={new Date(2100, 11, 31)}
+            />
+          )}
         </ScrollView>
       </View>
 

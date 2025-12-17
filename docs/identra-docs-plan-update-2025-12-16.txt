@@ -1,0 +1,63 @@
+# Identra Secure Docs Scope & Data-Handling Update (Dec 16, 2025)
+
+This addendum refines the Docs tab scope and security architecture so Identra stays aligned with the Security & PDPA guidance in identra-app-plan.md (L401-L447) while making the "personal docs" experience predictable, encrypted, and share-ready.
+
+## 1. Purpose & Non-Goals
+- **Purpose:** Give users a tightly-scoped vault for their own Birth Certificate, Driving License, and Gem Certificate, with frictionless viewing/sharing that still keeps sensitive data encrypted end-to-end.
+- **Non-goals:** The Docs tab will **not** store passports, NICs, or bank cards (those have dedicated tabs); it will not introduce third-party verification/KYC flows.
+
+## 2. MVP Scope for Docs Tab
+1. **Supported types:**
+   - Birth Certificate
+   - Driving License
+   - Gem Certificate
+2. Each type gets its own Add/Edit bottom sheet derived from a shared base component (to keep logic reusable like Cards/Passports) but with type-specific fields, validation, and helper text (e.g., DL number format, Gem Certificate grade fields).
+3. FAB + type grid only exposes the three allowed document types. Any attempt to add passports/cards here must be disabled.
+4. Docs list groups entries by type, with status chips (Valid, Expiring, Missing Info) computed from expiry metadata when present.
+
+## 3. Data Model & Storage Rules
+| Item | Firestore Path | Storage Field(s) | Protection | Notes |
+| --- | --- | --- | --- | --- |
+| Document metadata (title, type, issue/expiry dates, labels) | `/users/{uid}/documents/{docId}` | `docType`, `displayName`, `issuedAt`, `expiresAt`, `status`, `tags` | Stored as plaintext (non-sensitive) | `docType` limited to `birth_certificate`, `driving_license`, `gem_certificate`.
+| Sensitive structured data (certificate numbers, authority, NIC references) | Same doc | `encryptedPayload` (Base64 string) | Client-side AES-256-GCM before write; store IV + auth tag | Payload schema versioned per type.
+| Binary artifacts (scans, PDFs, photos) | `gs://.../users/{uid}/documents/{docId}/{fileId}` | Raw file bytes | Encrypt file client-side before `uploadBytes`; store `encryptionMetadata` in Firestore | Use per-file symmetric key.
+| Sharing tokens / signed URL metadata | `/users/{uid}/documents/{docId}/shares/{shareId}` | `expiresAt`, `scope`, `keyWrap` | Generated via callable CF; only non-sensitive refs stored | Actual decrypt key delivered via encrypted channel to requester.
+| NIC hashes / cross-link references | `/users_private/{uid}` | `nic_hash` | HMAC-SHA256 with pepper (existing rule) | No change, but docs can reference NIC hash ID only.
+
+## 4. Client-Side Encryption & Key Management
+1. **Key source:** Derive a 256-bit key using PBKDF2( user PIN or device secret, per-device salt, 150k iterations ). Store wrapped key material in `expo-secure-store`. Biometric unlock gates access and re-derivation.
+2. **Metadata encryption:** Serialize structured sensitive fields (numbers, notes, issuers) into JSON, then encrypt with AES-GCM (random IV) before saving to Firestore as `encryptedPayload`. Include `schemaVersion` to future-proof.
+3. **File encryption:** Before uploading scans, encrypt with the same master key using streaming AES-GCM (or libs like `react-native-aes-gcm`). Save `encryptionMetadata: { iv, tag, algo }` alongside Storage object metadata.
+4. **Decryption:** On view/share, fetch ciphertext + metadata, derive key, decrypt locally, and only then render or attach to share payloads.
+5. **Key rotation:** On PIN change, re-wrap master key and enqueue background job to re-encrypt documents (or mark `needsReencrypt=true` to process lazily).
+
+## 5. Offline Caching & Device Storage
+- Cached decrypted files live in `FileSystem.cacheDirectory/secure/docs/{docId}` with OS keychain-backed file encryption (Expo SecureStore path). Purge cache on logout or after 24h of inactivity.
+- Never persist plaintext payloads in AsyncStorage. Use memory-only stores while the app session is unlocked.
+- Respect offline mode by queueing encrypted writes (Firestore persistence already enabled). Ensure queue never stores plaintext.
+
+## 6. Secure Sharing Flow
+1. User taps Share → client decrypts locally → re-encrypts with a one-time key.
+2. Client calls callable Cloud Function `generateShareLink(docId, shareScope)` with App Check & auth token.
+3. Function stores share metadata (`shareId`, `expiresAt`, hashed recipient contact) and returns a short-lived HTTPS link.
+4. Link recipients must authenticate (if in-app) or enter passphrase (if external). Cloud Function validates share, unwraps key, streams decrypted bytes, then invalidates link at expiry.
+5. Audit log entry stored per share for PDPA traceability.
+
+## 7. Gaps in Existing Plan & Required Changes
+1. **Doc type sprawl:** Current plan lets NIC/Passport/Bank Card show inside Docs (see existing grouping logic). Update plan + UI to whitelist only Birth/Driving/Gem in Docs tab.
+2. **No encryption mandate:** Present guidance stores doc numbers & scans in plaintext Firestore/Storage. Introduce mandatory client-side AES-GCM for both metadata + binaries, aligned with PDPA "appropriate technical measures" clause (L433-L439).
+3. **Cache hygiene unspecified:** Certificate previews are cached without eviction/secure store. Require SecureStore-backed cache and wipe on logout.
+4. **Sharing controls undefined:** Plan assumes `getDownloadURL()` which issues non-expiring links; update to signed, expiring links with encrypted payloads + App Check.
+5. **Schema validation:** Need Firestore rules ensuring `docType` ∈ {birth_certificate, driving_license, gem_certificate} and `encryptedPayload` exists for each doc. Add rule to block writes missing encryption metadata.
+6. **Audit & revoke:** Add share revocation + logging requirements to satisfy PDPA breach accountability.
+
+## 8. Implementation Checklist
+1. Update AddDocumentSheet + FAB logic to surface only the three supported doc types.
+2. Create shared `BaseDocSheet` + type-specific configs (fields, regex, helper copy) for Birth, Driving, Gem.
+3. Implement `useEncryptedDocs` hook handling encrypt/decrypt, caching, and share token requests.
+4. Extend Firestore & Storage security rules to validate docType enums and enforce owner-only access (already in plan) plus require `request.auth.token.email_verified == true` before doc uploads.
+5. Build Cloud Function(s): `generateShareLink`, `revokeShareLink`, optional `listShares` for audit.
+6. Document device storage behavior (cache TTL, logout wipe) in onboarding + privacy policy to remain PDPA-compliant.
+7. Add QA checklist covering encryption toggles, offline mode behavior, share expiry, and cache purge.
+
+By implementing the above, Identra keeps Docs scoped to the MVP trio, encrypts every sensitive field client-side, and delivers a reusable Add/Edit experience consistent with Cards/Passports while satisfying Sri Lanka PDPA security expectations.

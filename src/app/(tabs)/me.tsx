@@ -1,14 +1,8 @@
+import { useRouter } from "expo-router";
+import { Check, LogOut, Settings } from "lucide-react-native";
+import React, { useMemo } from "react";
 import {
-  BriefcaseMedical,
-  Car,
-  Check,
-  GraduationCap,
-  LogOut,
-  Plus,
-  Settings,
-} from "lucide-react-native";
-import React from "react";
-import {
+  ActivityIndicator,
   Alert,
   Image,
   ScrollView,
@@ -19,18 +13,53 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import DocumentItem from "@/components/DocumentItem";
-import IdentityStatusCard from "@/components/IdentityStatusCard";
-import LinkedAccountCard from "@/components/LinkedAccountCard";
-import ProfileInfoCard from "@/components/ProfileInfoCard";
+import ProfileInfoCard from "@/components/profile/ProfileInfoCard";
 import { Layout } from "@/constants/Layout";
 import { Typography } from "@/constants/Typography";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import {
+  BriefcaseMedical,
+  Car,
+  GraduationCap,
+  Plus,
+} from "lucide-react-native";
+
+import DocumentItem from "@/components/docs/DocumentItem";
+import LinkedAccountCard from "@/components/profile/LinkedAccountCard";
 
 export default function MeScreen() {
   const { colors, isDark } = useTheme();
-  const { signOut } = useAuth();
+  const { signOut, user, userProfile, initializing } = useAuth();
+  const router = useRouter();
+
+  const profileMeta = useMemo(() => {
+    if (!user && !userProfile) {
+      return null;
+    }
+    return {
+      name: userProfile?.name || user?.displayName || "User",
+      email: userProfile?.email || user?.email || "Not provided",
+      gender: userProfile?.gender
+        ? userProfile.gender.charAt(0).toUpperCase() +
+          userProfile.gender.slice(1)
+        : "Unknown",
+      birthYear: userProfile?.birth_year,
+      dob: userProfile?.dob
+        ? new Date(userProfile.dob).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })
+        : "Not set",
+      phone: userProfile?.phone || "Not linked",
+      nicLast4: userProfile?.nic_last4 || "----",
+      nicAddedAt: userProfile?.nic_added_at,
+      isVerified: Boolean(userProfile?.nic_last4),
+      avatar:
+        user?.photoURL || "https://randomuser.me/api/portraits/men/32.jpg",
+    };
+  }, [user, userProfile]);
 
   const handleSignOut = async () => {
     try {
@@ -55,7 +84,10 @@ export default function MeScreen() {
             Profile
           </Text>
           <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.iconButton}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.push("/settings" as any)}
+            >
               <Settings size={24} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton} onPress={handleSignOut}>
@@ -64,116 +96,138 @@ export default function MeScreen() {
           </View>
         </View>
 
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View
-            style={[styles.avatarContainer, { borderColor: colors.surface }]}
-          >
-            <Image
-              source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }}
-              style={styles.avatar}
-            />
-            <View
-              style={[styles.verifiedBadge, { borderColor: colors.surface }]}
-            >
-              <Check size={12} color="#FFF" strokeWidth={3} />
+        {initializing ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.tint} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+              Loading your profile…
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* Profile Header */}
+            <View style={styles.profileHeader}>
+              <View
+                style={[
+                  styles.avatarContainer,
+                  { borderColor: colors.surface },
+                ]}
+              >
+                <Image
+                  source={{ uri: profileMeta?.avatar }}
+                  style={styles.avatar}
+                />
+                {profileMeta?.isVerified && (
+                  <View
+                    style={[
+                      styles.verifiedBadge,
+                      { borderColor: colors.surface },
+                    ]}
+                  >
+                    <Check size={12} color="#FFF" strokeWidth={3} />
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.name, { color: colors.text }]}>
+                {profileMeta?.name ?? "User"}
+              </Text>
+              <View
+                style={[
+                  styles.verifiedTag,
+                  {
+                    backgroundColor: profileMeta?.isVerified
+                      ? isDark
+                        ? "rgba(0,229,255,0.15)"
+                        : "#E0F7FA"
+                      : isDark
+                      ? "rgba(255,255,255,0.08)"
+                      : "#F0F0F0",
+                  },
+                ]}
+              >
+                <Text style={styles.verifiedText}>
+                  {profileMeta?.isVerified
+                    ? "Verified User"
+                    : "Verification Pending"}
+                </Text>
+              </View>
             </View>
-          </View>
-          <Text style={[styles.name, { color: colors.text }]}>Alex Doe</Text>
-          <View
-            style={[
-              styles.verifiedTag,
-              { backgroundColor: isDark ? "rgba(0,229,255,0.15)" : "#E0F7FA" },
-            ]}
-          >
-            <Text style={styles.verifiedText}>Verified User</Text>
-          </View>
-        </View>
 
-        {/* Profile Info */}
-        <ProfileInfoCard
-          dob="Jan 01, 1990"
-          gender="Male"
-          phone="+1 234 567 890"
-          email="alex@example.com"
-        />
+            {/* Profile Info */}
+            <ProfileInfoCard
+              dob={profileMeta?.dob ?? "Not set"}
+              gender={profileMeta?.gender ?? "Unknown"}
+              phone={profileMeta?.phone ?? "Not linked"}
+              email={profileMeta?.email ?? "Not provided"}
+            />
 
-        {/* My Identity */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            My Identity
-          </Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAll}>View all</Text>
-          </TouchableOpacity>
-        </View>
-        <IdentityStatusCard />
+            {/* Linked Accounts */}
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Linked Accounts
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.addButton,
+                  { backgroundColor: isDark ? colors.card : "#FFF" },
+                ]}
+              >
+                <Plus size={16} color="#00C4A7" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+            >
+              <LinkedAccountCard
+                bankName="VISA"
+                accountType="Savings Account"
+                number="4242"
+                balance="$12,450.00"
+                theme="blue"
+              />
+              <LinkedAccountCard
+                bankName="Mastercard"
+                accountType="Business"
+                number="8832"
+                balance="$5,200.00"
+                theme="dark"
+              />
+            </ScrollView>
 
-        {/* Linked Accounts */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Linked Accounts
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.addButton,
-              { backgroundColor: isDark ? colors.card : "#FFF" },
-            ]}
-          >
-            <Plus size={16} color="#00C4A7" />
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.horizontalScroll}
-        >
-          <LinkedAccountCard
-            bankName="VISA"
-            accountType="Savings Account"
-            number="4242"
-            balance="$12,450.00"
-            theme="blue"
-          />
-          <LinkedAccountCard
-            bankName="Mastercard"
-            accountType="Business"
-            number="8832"
-            balance="$5,200.00"
-            theme="dark"
-          />
-        </ScrollView>
-
-        {/* Documents */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Documents
-          </Text>
-        </View>
-        <DocumentItem
-          title="COVID Vaccination"
-          subtitle="Added on Dec 12, 2023"
-          icon={BriefcaseMedical}
-          iconColor="#2962FF"
-          iconBg={isDark ? "rgba(41,98,255,0.15)" : "#E3F2FD"}
-          type="list"
-        />
-        <DocumentItem
-          title="Driving License"
-          subtitle="Exp: 05/2028"
-          icon={Car}
-          iconColor="#FFC107"
-          iconBg={isDark ? "rgba(255,193,7,0.15)" : "#FFF8E1"}
-          type="list"
-        />
-        <DocumentItem
-          title="University Degree"
-          subtitle="Bachelor of Science"
-          icon={GraduationCap}
-          iconColor="#9C27B0"
-          iconBg={isDark ? "rgba(156,39,176,0.15)" : "#F3E5F5"}
-          type="list"
-        />
+            {/* Documents */}
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Documents
+              </Text>
+            </View>
+            <DocumentItem
+              title="COVID Vaccination"
+              subtitle="Added on Dec 12, 2023"
+              icon={BriefcaseMedical}
+              iconColor="#2962FF"
+              iconBg={isDark ? "rgba(41,98,255,0.15)" : "#E3F2FD"}
+              type="list"
+            />
+            <DocumentItem
+              title="Driving License"
+              subtitle="Exp: 05/2028"
+              icon={Car}
+              iconColor="#FFC107"
+              iconBg={isDark ? "rgba(255,193,7,0.15)" : "#FFF8E1"}
+              type="list"
+            />
+            <DocumentItem
+              title="University Degree"
+              subtitle="Bachelor of Science"
+              icon={GraduationCap}
+              iconColor="#9C27B0"
+              iconBg={isDark ? "rgba(156,39,176,0.15)" : "#F3E5F5"}
+              type="list"
+            />
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -204,6 +258,15 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 4,
+  },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Layout.spacing.xl,
+    gap: Layout.spacing.m,
+  },
+  loadingText: {
+    fontFamily: Typography.fontFamily.medium,
   },
   profileHeader: {
     alignItems: "center",
@@ -245,6 +308,23 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.medium,
     fontSize: 12,
     color: "#006064",
+  },
+  identitySummary: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: Layout.spacing.l,
+    borderRadius: Layout.borderRadius.l,
+    borderWidth: 1,
+  },
+  identityLabel: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: 12,
+    letterSpacing: 1,
+  },
+  identityValue: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: 16,
+    marginTop: 4,
   },
   sectionHeader: {
     flexDirection: "row",

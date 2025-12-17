@@ -1,109 +1,77 @@
-import { Bell, ShieldCheck } from 'lucide-react-native';
-import React, { useCallback } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Bell, ShieldCheck } from "lucide-react-native";
+import React, { useCallback } from "react";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import AddDocumentSheet from '@/components/AddDocumentSheet';
-import NICCard from '@/components/NICCard';
-import QuickActions from '@/components/QuickActions';
-import RecentItems from '@/components/RecentItems';
-import { Layout } from '@/constants/Layout';
-import { Typography } from '@/constants/Typography';
-import { useBottomSheet } from '@/context/BottomSheetContext';
-import { useTheme } from '@/context/ThemeContext';
-import { DocumentType, useDocumentManagement } from '@/hooks/useDocumentManagement';
+import AddDocsSheet from "@/components/docs/AddDocsSheet";
+import NICCard from "@/components/home/NICCard";
+import QuickActions from "@/components/home/QuickActions";
+import RecentItems from "@/components/home/RecentItems";
+import { Layout } from "@/constants/Layout";
+import { Typography } from "@/constants/Typography";
+import { useBottomSheet } from "@/context/BottomSheetContext";
+import { useTheme } from "@/context/ThemeContext";
+import { useDocumentManagement } from "@/hooks/useDocumentManagement";
 
 export default function HomeScreen() {
   const { colors, isDark } = useTheme();
   const { present, dismiss } = useBottomSheet();
 
-  const { uploadFile, takePhoto, pickImage, pickDocument } = useDocumentManagement();
-
-  const mapDocType = (id: string): DocumentType => {
-    switch (id) {
-      case "nic":
-        return "NIC";
-      case "passport":
-        return "Passport";
-      case "bank_card":
-        return "Bank Card";
-      case "birth_cert":
-        return "Certificate";
-      default:
-        return "Other";
-    }
-  };
-
-  const handleUpload = async (method: string, type: DocumentType = "Other") => {
-    let result = null;
-    if (method === "camera") {
-      result = await takePhoto();
-    } else if (method === "photo") {
-      result = await pickImage();
-    } else if (method === "pdf") {
-      result = await pickDocument();
-    }
-
-    if (result) {
-      await uploadFile(result.uri, {
-        title: `${type} - ${new Date().toLocaleDateString()}`,
-        type: type,
-      });
-    }
-  };
+  const { uploadFile, takePhoto, pickImage, pickDocument } =
+    useDocumentManagement();
 
   const handleAddPress = useCallback(() => {
     present("add-document", {
-      component: AddDocumentSheet,
-      snapPoints: ["74%"],
-      props: {
-        onDocumentTypeSelect: (typeId: string) => {
-          dismiss();
-          const type = mapDocType(typeId);
-          // After selecting type, ask for method
-          Alert.alert(
-            "Upload Method",
-            `How do you want to upload your ${type}?`,
-            [
-              {
-                text: "Camera",
-                onPress: () => handleUpload("camera", type),
-              },
-              {
-                text: "Gallery",
-                onPress: () => handleUpload("photo", type),
-              },
-              { text: "Cancel", style: "cancel" },
-            ]
-          );
-        },
-        onUploadMethodSelect: (method: string) => {
-          dismiss();
-          // If method selected directly, type is "Other"
-          handleUpload(method, "Other");
-        },
-      },
+      component: AddDocsSheet,
+      snapPoints: ["50%"],
     });
   }, [present, dismiss, uploadFile]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.surface }]}
+      edges={["top"]}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={[styles.avatarContainer, { borderColor: colors.border }]}>
+            <View
+              style={[styles.avatarContainer, { borderColor: colors.border }]}
+            >
               <Image
-                source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
+                source={{
+                  uri: "https://randomuser.me/api/portraits/men/32.jpg",
+                }}
                 style={styles.avatar}
               />
             </View>
-            <View style={[styles.secureBadge, { backgroundColor: isDark ? 'rgba(0,196,167,0.2)' : '#E8F5E9' }]}>
+            <View
+              style={[
+                styles.secureBadge,
+                { backgroundColor: isDark ? "rgba(0,196,167,0.2)" : "#E8F5E9" },
+              ]}
+            >
               <ShieldCheck size={14} color="#00C4A7" />
               <Text style={styles.secureText}>Secure</Text>
             </View>
           </View>
-          <TouchableOpacity style={[styles.bellButton, { backgroundColor: isDark ? colors.card : '#FFF' }]}>
+          <TouchableOpacity
+            style={[
+              styles.bellButton,
+              { backgroundColor: isDark ? colors.card : "#FFF" },
+            ]}
+          >
             <Bell size={22} color={colors.text} />
             <View style={styles.notificationDot} />
           </TouchableOpacity>
@@ -111,7 +79,9 @@ export default function HomeScreen() {
 
         {/* Greeting */}
         <View style={styles.greetingContainer}>
-          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Good Morning,</Text>
+          <Text style={[styles.greeting, { color: colors.textSecondary }]}>
+            Good Morning,
+          </Text>
           <Text style={[styles.name, { color: colors.text }]}>Alex.</Text>
         </View>
 
@@ -136,31 +106,31 @@ const styles = StyleSheet.create({
     paddingBottom: Layout.spacing.xl,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Layout.spacing.l,
     paddingVertical: Layout.spacing.m,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   avatarContainer: {
     width: 44,
     height: 44,
     borderRadius: 22,
     borderWidth: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginRight: Layout.spacing.s,
   },
   avatar: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   secureBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
@@ -168,25 +138,25 @@ const styles = StyleSheet.create({
   secureText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: 12,
-    color: '#00C4A7',
+    color: "#00C4A7",
     marginLeft: 4,
   },
   bellButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
   },
   notificationDot: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     right: 12,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FF5252',
+    backgroundColor: "#FF5252",
   },
   greetingContainer: {
     paddingHorizontal: Layout.spacing.l,
@@ -201,4 +171,3 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
 });
-

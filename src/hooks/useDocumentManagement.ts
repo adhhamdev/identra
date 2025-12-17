@@ -1,32 +1,25 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  serverTimestamp,
-  updateDoc,
+    addDoc,
+    collection,
+    deleteDoc,
+    doc,
+    getDoc,
+    serverTimestamp,
+    updateDoc,
 } from 'firebase/firestore';
 import {
-  deleteObject,
-  getDownloadURL,
-  ref,
-  uploadBytes,
+    deleteObject,
+    getDownloadURL,
+    ref,
+    uploadBytes,
 } from 'firebase/storage';
 import { useState } from 'react';
 import { Alert } from 'react-native';
 
 import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase';
-
-export type DocumentType =
-  | 'NIC'
-  | 'Passport'
-  | 'Bank Card'
-  | 'Certificate'
-  | 'Other';
 
 export function useDocumentManagement() {
   const { user } = useAuth();

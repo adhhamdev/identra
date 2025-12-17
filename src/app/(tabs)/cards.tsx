@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react-native";
+import { MoreVertical, Plus } from "lucide-react-native";
 import React, { useCallback } from "react";
 import {
   ActivityIndicator,
@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import AddCardSheet, { CardFormData } from "@/components/AddCardSheet";
-import BankCard from "@/components/BankCard";
+import AddCardSheet, { CardFormData } from "@/components/cards/AddCardSheet";
+import BankCard from "@/components/cards/BankCard";
 import { Layout } from "@/constants/Layout";
 import { Typography } from "@/constants/Typography";
 import { useBottomSheet } from "@/context/BottomSheetContext";
@@ -139,6 +139,9 @@ export default function CardsScreen() {
         <Text style={[styles.title, { color: colors.text }]}>
           My Bank Cards
         </Text>
+        <TouchableOpacity style={styles.iconButton}>
+          <MoreVertical size={24} color={colors.text} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -207,6 +210,9 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 28,
+  },
+  iconButton: {
+    padding: 4,
   },
   scrollContent: {
     paddingBottom: 100,

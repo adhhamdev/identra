@@ -1,5 +1,5 @@
-import AddPassportSheet from "@/components/AddPassportSheet";
-import PassportCard from "@/components/PassportCard";
+import AddPassportSheet from "@/components/passports/AddPassportSheet";
+import PassportCard from "@/components/passports/PassportCard";
 import { Layout } from "@/constants/Layout";
 import { Typography } from "@/constants/Typography";
 import { useBottomSheet } from "@/context/BottomSheetContext";
