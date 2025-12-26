@@ -13,6 +13,7 @@ export interface PassportFormData {
 export interface PassportRecord extends PassportFormData {
   id: string;
   flagUrl?: string;
+  isEncrypted?: boolean;
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
 }

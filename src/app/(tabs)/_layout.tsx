@@ -1,7 +1,7 @@
 import { Tabs, useRouter } from "expo-router";
-import { CreditCard, FileText, Globe, Home, User } from "lucide-react-native";
+import { CreditCard, FileText, Globe, Home, Lock, Shield, User } from "lucide-react-native";
 import React, { useEffect } from "react";
-import { Platform, StyleSheet, useColorScheme, View } from "react-native";
+import { Platform, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   withSpring,
@@ -9,9 +9,11 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import RecoveryFlow from "@/components/auth/RecoveryFlow";
 import { Colors } from "@/constants/Colors";
 import { Typography } from "@/constants/Typography";
 import { useAuth } from "@/context/AuthContext";
+import { useSecurity } from "@/context/SecurityContext";
 import type { UserInfo } from "firebase/auth";
 
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -61,6 +63,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, userProfile, initializing } = useAuth();
+  const { isVaultInitialized, isUnlocked, unlockVault } = useSecurity();
 
   const isOAuthUser = user?.providerData.some(
     (p: UserInfo) => p.providerId !== "password"
@@ -95,6 +98,37 @@ export default function TabLayout() {
     insets.bottom,
     Platform.OS === "ios" ? 24 : 12
   );
+
+  // GATING: If vault not initialized, force Recovery Flow
+  if (user && isVerified && userProfile?.nic_last4 && !isVaultInitialized) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FFF', paddingTop: insets.top }}>
+        <RecoveryFlow onComplete={() => router.replace('/(tabs)' as any)} />
+      </View>
+    );
+  }
+
+  // GATING 2: If vault initialized but locked, show Unlock Screen
+  if (user && isVerified && userProfile?.nic_last4 && isVaultInitialized && !isUnlocked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(0, 196, 167, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 }}>
+          <Lock size={40} color="#00C4A7" />
+        </View>
+        <Text style={{ fontSize: 24, fontFamily: Typography.fontFamily.bold, color: '#111827', marginBottom: 12 }}>Vault Locked</Text>
+        <Text style={{ fontSize: 16, fontFamily: Typography.fontFamily.regular, color: '#6B7280', textAlign: 'center', marginBottom: 40, lineHeight: 24 }}>
+          Your identity vault is secured with bank-grade encryption. Unlock with biometrics to continue.
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: '#00C4A7', paddingVertical: 18, paddingHorizontal: 32, borderRadius: 16, flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%' }}
+          onPress={unlockVault}
+        >
+          <Shield size={20} color="#FFF" />
+          <Text style={{ color: '#FFF', fontSize: 17, fontFamily: Typography.fontFamily.bold, flex: 1, textAlign: 'center' }}>Unlock Secure Vault</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <Tabs

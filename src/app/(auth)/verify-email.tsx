@@ -26,7 +26,7 @@ export default function VerifyEmailScreen() {
 
     if (user.emailVerified) {
       // Redirect to root, let the layout handle NIC check
-      router.replace("/");
+      router.replace("/(tabs)");
     }
   }, [user, initializing, router]);
 
@@ -51,7 +51,7 @@ export default function VerifyEmailScreen() {
 
       const currentUser = auth.currentUser;
       if (currentUser?.emailVerified) {
-        router.replace("/");
+        router.replace("/(tabs)");
       } else {
         setStatus("Not verified yet. Please check your inbox and try again.");
       }

@@ -4,7 +4,9 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Layout } from "@/constants/Layout";
 import { Typography } from "@/constants/Typography";
+import { useSecurity } from "@/context/SecurityContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useDocumentManagement } from "@/hooks/useDocumentManagement";
 
 interface ShareDocumentSheetProps {
     document: any;
@@ -16,10 +18,17 @@ export default function ShareDocumentSheet({
     onClose,
 }: ShareDocumentSheetProps) {
     const { colors, isDark } = useTheme();
+    const { decryptAndShare } = useDocumentManagement();
+    const { isUnlocked, unlockVault } = useSecurity();
 
-    // Placeholder actions
-    const handleAction = (action: string) => {
-        console.log(`Share Action: ${action} for ${document?.title}`);
+    const handleAction = async (action: string) => {
+        if (!isUnlocked) {
+            const success = await unlockVault();
+            if (!success) return;
+        }
+
+        // Use the common secure share flow for all formats in MVP
+        await decryptAndShare(document);
         onClose();
     };
 

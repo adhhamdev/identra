@@ -91,7 +91,7 @@ export default function AddNICScreen() {
           [
             {
               text: "OK",
-              onPress: () => router.replace("/"),
+              onPress: () => router.replace("/(tabs)"),
             },
           ]
         );

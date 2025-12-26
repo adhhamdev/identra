@@ -9,7 +9,7 @@ import {
   Fingerprint,
   Lock,
   User,
-  Wallet
+  Wallet,
 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -80,7 +80,7 @@ export default function SignInScreen() {
     );
 
     if (user.emailVerified || isOAuthUser) {
-      router.replace("/");
+      router.replace("/(tabs)");
     } else {
       router.replace("/(auth)/verify-email");
     }
@@ -116,7 +116,13 @@ export default function SignInScreen() {
     (Platform.OS === "web" && googleConfig.webClientId);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.background : "#F4F9F8" }]} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? colors.background : "#F4F9F8" },
+      ]}
+      edges={["top", "bottom"]}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -131,7 +137,9 @@ export default function SignInScreen() {
             <View style={styles.iconContainer}>
               <Wallet size={32} color="#00C4A7" />
             </View>
-            <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
+            <Text style={[styles.title, { color: colors.text }]}>
+              Welcome Back
+            </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Sign in to access your wallet
             </Text>
@@ -140,7 +148,12 @@ export default function SignInScreen() {
           {/* Form Section */}
           <View style={styles.form}>
             {/* Email Input */}
-            <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.card : "#FFF" }]}>
+            <View
+              style={[
+                styles.inputContainer,
+                { backgroundColor: isDark ? colors.card : "#FFF" },
+              ]}
+            >
               <User size={20} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 placeholder="Email"
@@ -157,7 +170,15 @@ export default function SignInScreen() {
             </View>
 
             {/* Password Input */}
-            <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.card : "#FFF", marginTop: 16 }]}>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: isDark ? colors.card : "#FFF",
+                  marginTop: 16,
+                },
+              ]}
+            >
               <Lock size={20} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 ref={passwordRef}
@@ -227,7 +248,15 @@ export default function SignInScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.socialButton}>
-              <Text style={{ fontSize: 24, fontWeight: 'bold', color: isDark ? '#FFF' : '#000' }}></Text>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: "bold",
+                  color: isDark ? "#FFF" : "#000",
+                }}
+              >
+                
+              </Text>
             </TouchableOpacity>
           </View>
 

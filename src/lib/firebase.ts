@@ -5,8 +5,7 @@ import { Auth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
 import {
   getFirestore,
   initializeFirestore,
-  persistentLocalCache,
-  persistentSingleTabManager,
+  memoryLocalCache,
 } from 'firebase/firestore';
 import { Functions, getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
@@ -72,10 +71,8 @@ const isWeb = Platform.OS === 'web';
 const db = isWeb
   ? getFirestore(app)
   : initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentSingleTabManager({}),
-      }),
-      experimentalAutoDetectLongPolling: true
+      localCache: memoryLocalCache(),
+      experimentalAutoDetectLongPolling: true,
     });
 
 export { db };
