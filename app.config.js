@@ -17,8 +17,7 @@ module.exports = () => ({
     supportsTablet: true,
     bundleIdentifier: 'com.adhham.identra',
     usesApplePay: true,
-    GIDClientID:
-      '883451725534-co8e9th0qhe1eoja5skj05fchbkhnsg3.apps.googleusercontent.com',
+    GIDClientID: process.env.GOOGLE_IOS_CLIENT_ID,
     googleServicesFile: './GoogleService-Info.plist',
   },
   android: {
@@ -88,8 +87,7 @@ module.exports = () => ({
       messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
     },
     google: {
-      webClientId:
-        '883451725534-7otalels1iljo4h6hg0lb8pchnt0oust.apps.googleusercontent.com',
+      webClientId: process.env.GOOGLE_WEB_CLIENT_ID,
     },
   },
 });

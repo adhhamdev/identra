@@ -48,3 +48,7 @@ ui-debug.log
 firestore-debug.log
 pubsub-debug.log
 .firebase/
+
+# Firebase / Google
+google-services.json
+GoogleService-Info.plist
