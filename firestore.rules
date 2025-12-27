@@ -3,10 +3,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Users can only access their own documents
     match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId && request.app != null;
     }
     
-    // NIC hashes collection - write-only for deduplication
     // NIC hashes collection - write-only for deduplication (Server controlled)
     match /nic_hashes/{nicHash} {
       allow read, write: if false; // Only Cloud Functions (Admin SDK) can access
@@ -14,7 +13,7 @@ service cloud.firestore {
     
     // Private user data
     match /users_private/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId && request.app != null;
     }
   }
 }

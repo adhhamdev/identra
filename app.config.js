@@ -17,6 +17,9 @@ module.exports = () => ({
     supportsTablet: true,
     bundleIdentifier: 'com.adhham.identra',
     usesApplePay: true,
+    GIDClientID:
+      '883451725534-co8e9th0qhe1eoja5skj05fchbkhnsg3.apps.googleusercontent.com',
+    googleServicesFile: './GoogleService-Info.plist',
   },
   android: {
     package: 'com.adhham.identra',
@@ -26,8 +29,11 @@ module.exports = () => ({
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
+    googleServicesFile: './google-services.json',
   },
   plugins: [
+    'react-native-google-auth',
+    // '@react-native-google-signin/google-signin',
     'expo-router',
     'expo-font',
     [
@@ -80,6 +86,10 @@ module.exports = () => ({
       appId: process.env.FIREBASE_IOS_APP_ID,
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
       messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+    },
+    google: {
+      webClientId:
+        '883451725534-7otalels1iljo4h6hg0lb8pchnt0oust.apps.googleusercontent.com',
     },
   },
 });
