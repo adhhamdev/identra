@@ -4,6 +4,8 @@ const { onCall } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const { HttpsError } = require('firebase-functions/v2/https');
 
+const { checkRateLimit } = require('./rateLimiter');
+
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -16,31 +18,10 @@ const nicSecretPepper = defineSecret('NIC_SECRET_PEPPER');
 
 /**
  * Cloud Function: validateAndRegisterNIC
- * Validates NIC format, extracts derived info, computes hash for deduplication,
- * and saves to Firestore.
- *
- * Expected input:
- * {
- *   "nic": "981234567V" or "199812345678"
- * }
- *
- * Returns:
- * {
- *   "success": true,
- *   "data": {
- *     "nic": "981234567V",
- *     "nicType": "old",
- *     "birthYear": 1998,
- *     "dob": "1998-05-13",
- *     "gender": "male"
- *   }
- * }
- *
- * Error responses:
- * {
- *   "success": false,
- *   "error": "Invalid NIC format"
- * }
+ * Hardened with:
+ * 1. App Check (Attestation)
+ * 2. Auth & Verification
+ * 3. Distributed Rate Limiting (5/10min)
  */
 exports.validateAndRegisterNIC = onCall(
   {
@@ -48,25 +29,31 @@ exports.validateAndRegisterNIC = onCall(
     memory: '256MiB',
     maxInstances: 10,
     secrets: [nicSecretPepper],
+    enforceAppCheck: true, // Layer 1: App Attestation
   },
   async (request) => {
-    // Ensure user is authenticated
+    // 1. Layer 2: Auth Check
     if (!request.auth) {
       throw new HttpsError(
         'unauthenticated',
-        'User must be authenticated to register NIC'
-      );
-    }
-
-    // Verify email is verified
-    if (!request.auth.token.email_verified) {
-      throw new HttpsError(
-        'permission-denied',
-        'Your email must be verified to register your NIC.'
+        'Authentication required. Please sign in again.'
       );
     }
 
     const uid = request.auth.uid;
+
+    // 2. Layer 3: Rate Limiting
+    // Scoped to UID + activity to prevent brute force
+    await checkRateLimit(uid, 'nic_registration', 5, 10 * 60 * 1000);
+
+    // 3. Email Verification Check
+    if (!request.auth.token.email_verified) {
+      throw new HttpsError(
+        'permission-denied',
+        'Verify your email to proceed with NIC registration.'
+      );
+    }
+
     const { nic } = request.data;
 
     // Validate input

@@ -3,6 +3,11 @@ import {
   DefaultTheme,
   ThemeProvider as NavThemeProvider,
 } from "@react-navigation/native";
+import { Buffer } from "buffer";
+
+// Initialize polyfills immediately
+global.Buffer = Buffer;
+
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
@@ -21,6 +26,7 @@ import {
 import { AuthProvider } from "@/context/AuthContext";
 import { BottomSheetProvider } from "@/context/BottomSheetContext";
 import { ModalProvider } from "@/context/ModalContext";
+import { SecurityProvider } from "@/context/SecurityContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -49,19 +55,21 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.container}>
       <ThemeProvider>
         <AuthProvider>
-          <BottomSheetProvider>
-            <ModalProvider>
-              <NavThemeProvider
-                value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-              >
-                <Stack>
-                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="+not-found" />
-                </Stack>
-              </NavThemeProvider>
-            </ModalProvider>
-          </BottomSheetProvider>
+          <SecurityProvider>
+            <BottomSheetProvider>
+              <ModalProvider>
+                <NavThemeProvider
+                  value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+                >
+                  <Stack>
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="+not-found" />
+                  </Stack>
+                </NavThemeProvider>
+              </ModalProvider>
+            </BottomSheetProvider>
+          </SecurityProvider>
         </AuthProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

@@ -41,7 +41,7 @@ export default function ActionModal({
     <Modal
       transparent
       visible={visible}
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onDismiss}
       statusBarTranslucent
     >
@@ -100,7 +100,7 @@ export default function ActionModal({
                       style={[
                         styles.buttonText,
                         action.style === "destructive" &&
-                          styles.destructiveText,
+                        styles.destructiveText,
                         action.style === "cancel" && styles.cancelText,
                         !action.style && { color: "#007AFF" }, // Default blue
                       ]}

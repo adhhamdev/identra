@@ -90,3 +90,58 @@ Data Transfers: While PDPA applies extraterritorially, using Firebase (Google Cl
 Data Protection Officer (DPO): For a small startup, a formal DPO may not be required, but designate someone responsible for data protection.
 
 By aligning with these guidelines, the app meets both Firebase security and Sri Lanka PDPA standards. In sum, data is encrypted, access-controlled, and under user control.
+
+# Identra – Production Identity & Wallet Roadmap (V2.0)
+
+This document updates the original MVP plan with professional-grade security, sharing logic, and PDPA compliance strategies for a production-ready application.
+
+## 1. Zero-Trust Architecture
+
+Identra will transition from a simple data store to a **Zero-Trust Vault**.
+
+- **Principle**: The cloud is the source of truth, but the device is the key.
+- **Hybrid Storage**:
+  - **Cloud**: Primary storage for metadata and encrypted assets.
+  - **Device**: Encrypted local cache of frequently used Identity Objects (NIC, Passport).
+  - **Encryption**: Files are ideally encrypted client-side using a key derived from the user's Biometric-protected `SecureStore` before upload.
+
+## 2. The "Identity Object" Model
+
+Documents are no longer just images. They are objects comprising:
+
+- **Structural Metadata**: Title, Type, Expiry, Category.
+- **Asset**: High-resolution scan (Encrypted).
+- **Security Envelope**: HMAC signature to detect tampering.
+
+## 3. Advanced Sharing Engine
+
+The "Share with a Press" flow is designed for high security and low friction:
+
+1. **Trigger**: User selects "Share".
+2. **Authentication**: Mandatory Biometric gate (`expo-local-authentication`).
+3. **Execution**:
+   - **Signed URLs**: Use Firebase Cloud Functions to generate ephemeral, time-limited download links (5-10 mins).
+   - **Watermarked PDFs**: Generate on-the-fly PDFs with a custom watermark (e.g., "Shared via Identra to [Recipient] on [Date]") to deter identity theft.
+   - **Visual QR**: Display a high-entropy QR containing a pointer to the Signed URL.
+
+## 4. PDPA & Compliance (Sri Lanka)
+
+Adhering to PDPA (2023/2025) requires active data stewardship:
+
+- **Data Minimization**: Users can choose to "Purge Sensitive Fields" while keeping metadata for reminders.
+- **Account Purge**: A one-tap button to delete all Auth, Firestore, and Storage data.
+- **Retention Policy**: Implement automated cleanup for accounts inactive for >24 months.
+
+## 5. Security Moats
+
+- **Biometric Gating**: Every transition to a sensitive document view or sharing action MUST be gated.
+- **SecureStore**: All local secrets and decryption keys reside in hardware-backed storage.
+- **App Check**: Enabled to block non-official app instances from accessing Firebase.
+
+## 6. Implementation Checklist (Next Steps)
+
+- [ ] Implement `expo-local-authentication` globally.
+- [ ] Create Cloud Function/Logic for **Signed URL** generation.
+- [ ] Integrate `expo-print` for watermarked PDF generation.
+- [ ] Update `useCards` and `useDocuments` hooks to support client-side encryption.
+- [ ] Add "Delete My Account" functionality in Settings.

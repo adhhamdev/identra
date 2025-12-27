@@ -397,8 +397,8 @@ export default function AddPassportSheet({
                 activeDateField === "dob"
                   ? dateOfBirth
                   : activeDateField === "issue"
-                  ? issueDate
-                  : expiryDate
+                    ? issueDate
+                    : expiryDate
               )}
               mode="date"
               display={Platform.OS === "ios" ? "spinner" : "default"}
@@ -410,7 +410,7 @@ export default function AddPassportSheet({
         </ScrollView>
       </View>
 
-      <Modal visible={countryPickerVisible} transparent animationType="fade">
+      <Modal visible={countryPickerVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <TouchableOpacity
             activeOpacity={1}

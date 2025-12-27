@@ -1,58 +1,93 @@
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
+import * as Sharing from 'expo-sharing';
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    getDoc,
-    serverTimestamp,
-    updateDoc,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  serverTimestamp,
+  updateDoc,
 } from 'firebase/firestore';
 import {
-    deleteObject,
-    getDownloadURL,
-    ref,
-    uploadBytes,
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytes,
 } from 'firebase/storage';
 import { useState } from 'react';
 import { Alert } from 'react-native';
 
 import { useAuth } from '@/context/AuthContext';
+import { useSecurity } from '@/context/SecurityContext';
+import * as crypto from '@/lib/crypto';
 import { db, storage } from '@/lib/firebase';
 
 export function useDocumentManagement() {
   const { user } = useAuth();
+  const { masterKey, isUnlocked } = useSecurity();
   const [uploading, setUploading] = useState(false);
 
   const uploadFile = async (
     uri: string,
-    metadata: { title: string; type: DocumentType }
+    metadata: { title: string; type: DocumentType },
+    customFolder?: string
   ) => {
     if (!user) return;
     setUploading(true);
 
     try {
-      // 1. Create a blob from the URI
+      // 1. Create a blob from the URI and convert to Uint8Array
       const response = await fetch(uri);
       const blob = await response.blob();
+
+      let uploadData: Blob | Uint8Array = blob;
+      const shouldEncrypt = isUnlocked && !!masterKey;
+
+      if (shouldEncrypt) {
+        // Convert Blob to ArrayBuffer then to Uint8Array
+        const arrayBuffer = await new Promise<ArrayBuffer>(
+          (resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as ArrayBuffer);
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(blob);
+          }
+        );
+
+        const uint8 = new Uint8Array(arrayBuffer);
+        uploadData = await crypto.encryptFile(uint8, masterKey);
+      }
 
       // 2. Upload to Firebase Storage
       const filename = `${Date.now()}_${Math.random()
         .toString(36)
         .substring(7)}`;
-      const storagePath = `users/${user.uid}/documents/${filename}`;
+
+      const folder =
+        customFolder ||
+        (metadata.type as any).toLowerCase().replace(/\s+/g, '_');
+      const storagePath = `users/${user.uid}/${folder}/${filename}`;
       const storageRef = ref(storage, storagePath);
 
-      await uploadBytes(storageRef, blob);
+      // If encrypted, we upload as a Uint8Array (binary), otherwise as Blob
+      await uploadBytes(storageRef, uploadData);
       const downloadUrl = await getDownloadURL(storageRef);
 
-      // 3. Save Metadata to Firestore
+      // 3. Save Metadata to Firestore (Metadata fields like Title are also encrypted if vault is unlocked)
+      let finalTitle = metadata.title;
+      if (shouldEncrypt) {
+        finalTitle = await crypto.encryptText(metadata.title, masterKey);
+      }
+
       await addDoc(collection(db, 'users', user.uid, 'documents'), {
-        title: metadata.title,
+        title: finalTitle,
         type: metadata.type,
         storagePath: storagePath,
-        downloadUrl: downloadUrl, // Optional: Cache it for read perf
+        downloadUrl: downloadUrl,
+        isEncrypted: shouldEncrypt,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -110,8 +145,33 @@ export function useDocumentManagement() {
     setUploading(true);
     try {
       const docRef = doc(db, 'users', user.uid, 'documents', docId);
+      let finalUpdates = { ...updates };
+
+      if (isUnlocked && !!masterKey) {
+        if (updates.title)
+          finalUpdates.title = await crypto.encryptText(
+            updates.title,
+            masterKey
+          );
+        if (updates.issuedDate)
+          finalUpdates.issuedDate = await crypto.encryptText(
+            updates.issuedDate,
+            masterKey
+          );
+        if (updates.expiryDate)
+          finalUpdates.expiryDate = await crypto.encryptText(
+            updates.expiryDate,
+            masterKey
+          );
+        if (updates.notes)
+          finalUpdates.notes = await crypto.encryptText(
+            updates.notes,
+            masterKey
+          );
+      }
+
       await updateDoc(docRef, {
-        ...updates,
+        ...finalUpdates,
         updatedAt: serverTimestamp(),
       });
       Alert.alert('Success', 'Document updated successfully');
@@ -167,6 +227,85 @@ export function useDocumentManagement() {
     }
   };
 
+  const decryptAndShare = async (docData: {
+    storagePath: string;
+    downloadUrl: string;
+    title: string;
+    type: string;
+    isEncrypted?: boolean;
+  }) => {
+    if (!user) return;
+
+    // 1. Biometric check/Unlock check
+    if (!isUnlocked || !masterKey) {
+      Alert.alert(
+        'Vault Locked',
+        'Please unlock your secure vault to access this document.'
+      );
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // 2. Fetch the file
+      const response = await fetch(docData.downloadUrl);
+      const arrayBuffer = await response.arrayBuffer();
+      let fileData = new Uint8Array(arrayBuffer);
+
+      // 3. Decrypt if needed
+      if (docData.isEncrypted) {
+        fileData = await crypto.decryptFile(fileData, masterKey);
+      }
+
+      // 4. Save to temporary directory
+      const extension = docData.type === 'PDF' ? 'pdf' : 'jpg';
+      const tempPath = `${FileSystem.cacheDirectory}${docData.title.replace(
+        /\s+/g,
+        '_'
+      )}_decrypted.${extension}`;
+
+      // Convert Uint8Array to base64 for FileSystem
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]); // Remove data:application/octet-stream;base64,
+        };
+        reader.readAsDataURL(new Blob([fileData]));
+      });
+
+      await FileSystem.writeAsStringAsync(tempPath, base64, {
+        encoding: 'base64',
+      });
+
+      // 5. Share with warning
+      Alert.alert(
+        'Secure Export',
+        'This document will be decrypted and shared outside Identra. You are responsible for its security once shared.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Decrypt & Share',
+            onPress: async () => {
+              await Sharing.shareAsync(tempPath);
+              // Optional: Cleanup temp file after a delay
+              setTimeout(() => {
+                FileSystem.deleteAsync(tempPath, { idempotent: true }).catch(
+                  () => {}
+                );
+              }, 5000);
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Decryption/Sharing error:', error);
+      Alert.alert('Error', 'Failed to decrypt or share the document.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return {
     uploading,
     uploadFile,
@@ -175,5 +314,6 @@ export function useDocumentManagement() {
     pickImage,
     updateDocument,
     deleteDocument,
+    decryptAndShare,
   };
 }

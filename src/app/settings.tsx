@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import {
   AlertTriangle,
   CheckCircle2,
-  ChevronLeft,
   ChevronRight,
   ClipboardCheck,
   Clock3,
@@ -13,7 +12,7 @@ import {
   ScanFace,
   ShieldCheck,
   Smartphone,
-  Trash2,
+  Trash2
 } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {
@@ -65,7 +64,7 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        {/* <View style={styles.header}>
           <TouchableOpacity
             style={[
               styles.backButton,
@@ -80,7 +79,7 @@ export default function SettingsScreen() {
             Settings
           </Text>
           <View style={{ width: 44 }} />
-        </View>
+        </View> */}
 
         <Text style={[styles.sectionLabel, sectionLabelColor]}>
           APP LOCK & SECURITY

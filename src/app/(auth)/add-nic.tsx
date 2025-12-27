@@ -67,9 +67,9 @@ export default function AddNICScreen() {
       }
 
       if (auth.currentUser?.emailVerified === false) {
-        throw new Error(
-          "Please verify your email address before continuing. Check your inbox."
-        );
+        setError("Please verify your email address before continuing. Check your inbox.");
+        setLoading(false);
+        return;
       }
 
       const validateAndRegisterNIC = httpsCallable(
@@ -82,16 +82,12 @@ export default function AddNICScreen() {
       if (result.success) {
         const data = result.data;
         Alert.alert(
-          "NIC Added",
-          `Your NIC has been validated.\n\nDate of Birth: ${data?.dob
-          }\nGender: ${data?.gender
-            ? data?.gender.charAt(0).toUpperCase() + data?.gender.slice(1)
-            : "Unknown"
-          }`,
+          "Verification Successful",
+          `Your NIC has been validated and linked to your secure vault.\n\nDate of Birth: ${data?.dob}\nGender: ${data?.gender ? data?.gender.charAt(0).toUpperCase() + data?.gender.slice(1) : "Unknown"}`,
           [
             {
-              text: "OK",
-              onPress: () => router.replace("/"),
+              text: "Continue to Dashboard",
+              onPress: () => router.replace("/(tabs)"),
             },
           ]
         );
@@ -100,7 +96,25 @@ export default function AddNICScreen() {
       }
     } catch (err: any) {
       console.error("NIC registration error:", err);
-      setError(err.message || "Failed to register NIC. Please try again.");
+
+      // Map specific Firebase error codes to user-friendly messages
+      let displayError = "An unexpected error occurred. Please try again.";
+
+      if (err.code === "resource-exhausted") {
+        displayError = err.message || "Too many attempts. Please wait a few minutes before trying again.";
+      } else if (err.code === "already-exists") {
+        displayError = "This NIC is already registered with another account.";
+      } else if (err.code === "permission-denied") {
+        displayError = err.message || "Permission denied. Please ensure your email is verified.";
+      } else if (err.code === "unauthenticated") {
+        displayError = "Your session has expired. Please sign in again.";
+      } else if (err.code === "invalid-argument") {
+        displayError = err.message || "Invalid NIC information provided.";
+      } else if (err.message) {
+        displayError = err.message;
+      }
+
+      setError(displayError);
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,5 @@
-import * as Google from "expo-auth-session/providers/google";
 import Constants from "expo-constants";
 import { Link, useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import {
   Chrome,
   Eye,
@@ -9,7 +7,7 @@ import {
   Fingerprint,
   Lock,
   User,
-  Wallet
+  Wallet,
 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -22,13 +20,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import GoogleAuth from "react-native-google-auth";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Typography } from "@/constants/Typography";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 
-WebBrowser.maybeCompleteAuthSession();
+// WebBrowser.maybeCompleteAuthSession(); // No longer needed for native flow
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -48,28 +47,20 @@ export default function SignInScreen() {
     const extra = Constants.expoConfig?.extra;
     return {
       webClientId: extra?.google?.webClientId ?? "",
-      iosClientId: extra?.google?.iosClientId ?? "",
-      androidClientId: extra?.google?.androidClientId ?? "",
     };
   }, []);
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: googleConfig.webClientId,
-    iosClientId: googleConfig.iosClientId,
-    androidClientId: googleConfig.androidClientId,
-    selectAccount: true,
-  });
-
+  // Initialize Google Auth
   useEffect(() => {
-    if (response?.type === "success") {
-      const { idToken, accessToken } = response.authentication ?? {};
-      if (idToken || accessToken) {
-        signInWithGoogleTokens({ idToken, accessToken }).catch((err) =>
-          setError(err?.message ?? "Google sign-in failed")
-        );
-      }
+    if (googleConfig.webClientId) {
+      GoogleAuth.configure({
+        webClientId: googleConfig.webClientId,
+        offlineAccess: true,
+      }).catch((err) => console.error("GoogleAuth.configure failed", err));
     }
-  }, [response]);
+  }, [googleConfig.webClientId]);
+
+  // Handle Response logic moved to handleGoogle for native flow
 
   useEffect(() => {
     if (initializing) return;
@@ -80,7 +71,7 @@ export default function SignInScreen() {
     );
 
     if (user.emailVerified || isOAuthUser) {
-      router.replace("/");
+      router.replace("/(tabs)");
     } else {
       router.replace("/(auth)/verify-email");
     }
@@ -106,17 +97,42 @@ export default function SignInScreen() {
 
   const handleGoogle = async () => {
     setError(null);
-    const result = await promptAsync();
-    if (result?.type === "dismiss") return;
+    setLoading(true);
+    try {
+      const result = await GoogleAuth.signIn();
+
+      if (result.type === 'success') {
+        const { idToken, accessToken } = result.data;
+        if (idToken) {
+          await signInWithGoogleTokens({ idToken, accessToken: accessToken || undefined });
+        } else {
+          throw new Error("No ID token received from Google");
+        }
+      } else if (result.type === 'cancelled') {
+        // User cancelled, no need to show error
+      } else if (result.type === 'noSavedCredentialFound') {
+        // This might happen with One Tap if no credentials are saved
+        // Usually, the library handles the fallback, but we can log it
+        console.warn("No saved credential found for Google One Tap");
+      }
+    } catch (err: any) {
+      console.error("Native Google Sign-In error:", err);
+      setError(err?.message ?? "Google sign-in failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const canUseGoogle =
-    (Platform.OS === "android" && googleConfig.androidClientId) ||
-    (Platform.OS === "ios" && googleConfig.iosClientId) ||
-    (Platform.OS === "web" && googleConfig.webClientId);
+  const canUseGoogle = !!googleConfig.webClientId;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.background : "#F4F9F8" }]} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? colors.background : "#F4F9F8" },
+      ]}
+      edges={["top", "bottom"]}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -131,7 +147,9 @@ export default function SignInScreen() {
             <View style={styles.iconContainer}>
               <Wallet size={32} color="#00C4A7" />
             </View>
-            <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
+            <Text style={[styles.title, { color: colors.text }]}>
+              Welcome Back
+            </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Sign in to access your wallet
             </Text>
@@ -140,7 +158,12 @@ export default function SignInScreen() {
           {/* Form Section */}
           <View style={styles.form}>
             {/* Email Input */}
-            <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.card : "#FFF" }]}>
+            <View
+              style={[
+                styles.inputContainer,
+                { backgroundColor: isDark ? colors.card : "#FFF" },
+              ]}
+            >
               <User size={20} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 placeholder="Email"
@@ -157,7 +180,15 @@ export default function SignInScreen() {
             </View>
 
             {/* Password Input */}
-            <View style={[styles.inputContainer, { backgroundColor: isDark ? colors.card : "#FFF", marginTop: 16 }]}>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: isDark ? colors.card : "#FFF",
+                  marginTop: 16,
+                },
+              ]}
+            >
               <Lock size={20} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 ref={passwordRef}
@@ -221,13 +252,21 @@ export default function SignInScreen() {
             <TouchableOpacity
               style={[styles.socialButton, !canUseGoogle && { opacity: 0.5 }]}
               onPress={handleGoogle}
-              disabled={!request || !canUseGoogle}
+              disabled={loading || !canUseGoogle}
             >
               <Chrome size={24} color="#EA4335" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.socialButton}>
-              <Text style={{ fontSize: 24, fontWeight: 'bold', color: isDark ? '#FFF' : '#000' }}></Text>
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: "bold",
+                  color: isDark ? "#FFF" : "#000",
+                }}
+              >
+                
+              </Text>
             </TouchableOpacity>
           </View>
 

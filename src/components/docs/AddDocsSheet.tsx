@@ -1,5 +1,6 @@
+import { ArrowLeft, Camera, FileText, Image as ImageIcon } from "lucide-react-native";
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { DOC_TYPES } from "@/constants";
 import { Layout } from "@/constants/Layout";
@@ -15,9 +16,94 @@ interface AddDocsSheetProps {
 
 export default function AddDocsSheet({ onClose }: AddDocsSheetProps) {
   const { colors, isDark } = useTheme();
-  const { uploadFile, takePhoto, pickImage, pickDocument } =
+  const { uploadFile, takePhoto, pickImage, pickDocument, uploading } =
     useDocumentManagement();
-  const [isProcessing, setIsProcessing] = useState(false);
+
+  const [selectedType, setSelectedType] = useState<typeof DOC_TYPES[0] | null>(null);
+
+  const handleUpload = async (method: UploadMethod) => {
+    if (!selectedType) return;
+
+    let result;
+    if (method === 'camera') {
+      result = await takePhoto();
+    } else if (method === 'photo') {
+      result = await pickImage();
+    } else {
+      result = await pickDocument();
+    }
+
+    if (result && result.uri) {
+      await uploadFile(result.uri, {
+        title: selectedType.label,
+        type: selectedType.docType as unknown as DocumentType,
+      });
+      onClose?.();
+    }
+  };
+
+  if (selectedType) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => setSelectedType(null)}
+            style={[styles.backButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}
+          >
+            <ArrowLeft size={20} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.text }]}>
+            Add {selectedType.label}
+          </Text>
+        </View>
+
+        <View style={styles.uploadOptions}>
+          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+            How would you like to upload your {selectedType.label.toLowerCase()}?
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: selectedType.accent }]}
+            onPress={() => handleUpload('camera')}
+            disabled={uploading}
+          >
+            <View style={styles.primaryButtonIcon}>
+              <Camera size={24} color="#000" />
+            </View>
+            <View style={styles.primaryButtonContent}>
+              <Text style={styles.primaryButtonLabel}>Scan with Camera</Text>
+              <Text style={styles.primaryButtonCaption}>Take a clear photo of your document</Text>
+            </View>
+            {uploading && <ActivityIndicator size="small" color="#000" />}
+          </TouchableOpacity>
+
+          <View style={styles.secondaryRow}>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { backgroundColor: isDark ? colors.card : '#F0F0F0' }]}
+              onPress={() => handleUpload('photo')}
+              disabled={uploading}
+            >
+              <View style={styles.secondaryIcon}>
+                <ImageIcon size={20} color={colors.text} />
+              </View>
+              <Text style={[styles.secondaryLabel, { color: colors.text }]}>Photo Gallery</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.secondaryButton, { backgroundColor: isDark ? colors.card : '#F0F0F0' }]}
+              onPress={() => handleUpload('pdf')}
+              disabled={uploading}
+            >
+              <View style={styles.secondaryIcon}>
+                <FileText size={20} color={colors.text} />
+              </View>
+              <Text style={[styles.secondaryLabel, { color: colors.text }]}>PDF Document</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -37,6 +123,7 @@ export default function AddDocsSheet({ onClose }: AddDocsSheetProps) {
             <TouchableOpacity
               key={option.id}
               activeOpacity={0.85}
+              onPress={() => setSelectedType(option)}
               style={[
                 styles.typeItem,
                 {
@@ -88,6 +175,14 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: Typography.fontFamily.bold,
     fontSize: 20,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  uploadOptions: {
+    marginTop: Layout.spacing.s,
   },
   sectionLabel: {
     fontFamily: Typography.fontFamily.semiBold,
